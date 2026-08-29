@@ -1,4 +1,4 @@
-import { Camera, CameraOff, LockKeyhole, Mic, MicOff, MessageSquare, PhoneOff, ScreenShare, Sparkles, type LucideIcon } from 'lucide-react-native';
+import { Camera, CameraOff, LockKeyhole, Mic, MicOff, MessageSquare, PhoneOff, ScreenShare, type LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -41,7 +41,6 @@ export function ControlsBar({
   chatOpen,
   locked,
   unread,
-  onEffects,
   onMic,
   onCam,
   onShare,
@@ -55,7 +54,6 @@ export function ControlsBar({
   chatOpen: boolean;
   locked: boolean;
   unread: number;
-  onEffects: () => void;
   onMic: () => void;
   onCam: () => void;
   onShare: () => void;
@@ -80,7 +78,6 @@ export function ControlsBar({
         borderColor: 'rgba(255,255,255,.07)',
       }}
     >
-      <CtrlButton icon={Sparkles} label={t('effects')} onPress={onEffects} />
       <CtrlButton icon={mic ? Mic : MicOff} label={t('mic')} active={mic} danger={!mic} onPress={onMic} />
       <CtrlButton icon={cam ? Camera : CameraOff} label={t('camera')} active={cam} danger={!cam} onPress={onCam} />
       <CtrlButton icon={ScreenShare} label={t('screenShare')} active={share} onPress={onShare} />

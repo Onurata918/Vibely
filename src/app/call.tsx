@@ -10,14 +10,17 @@ import { ChatPanel } from '@/components/call/ChatPanel';
 import { ColorClashOverlay } from '@/components/call/ColorClashOverlay';
 import { ControlsBar } from '@/components/call/ControlsBar';
 import { DrawGameOverlay } from '@/components/call/DrawGameOverlay';
+import { FiveSecondOverlay } from '@/components/call/FiveSecondOverlay';
 import { HeadsUpOverlay } from '@/components/call/HeadsUpOverlay';
 import { Okey101Overlay } from '@/components/call/Okey101Overlay';
 import { OkeyOverlay } from '@/components/call/OkeyOverlay';
 import { SpyGameOverlay } from '@/components/call/SpyGameOverlay';
 import { TabuOverlay } from '@/components/call/TabuOverlay';
 import { InviteTile, ParticipantTile, SelfTile, TileGrid } from '@/components/call/Tiles';
+import { ThisOrThatOverlay } from '@/components/call/ThisOrThatOverlay';
 import { TruthOrDareOverlay } from '@/components/call/TruthOrDareOverlay';
 import { VampireGameOverlay } from '@/components/call/VampireGameOverlay';
+import { WhosMostOverlay } from '@/components/call/WhosMostOverlay';
 import { SheetActionRow, SheetParagraph, SheetTitle } from '@/components/ui/Sheet';
 import { useApp, type RankGameKey } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -67,6 +70,9 @@ export default function CallScreen() {
   } = useApp();
   const [okey101Open, setOkey101Open] = useState(false);
   const [colorClashOpen, setColorClashOpen] = useState(false);
+  const [whosMostOpen, setWhosMostOpen] = useState(false);
+  const [thisOrThatOpen, setThisOrThatOpen] = useState(false);
+  const [fiveSecondOpen, setFiveSecondOpen] = useState(false);
 
   useEffect(() => {
     if (!call) router.back();
@@ -86,6 +92,36 @@ export default function CallScreen() {
         <SheetTitle>{t('effectsSheetTitle')}</SheetTitle>
         <SheetParagraph>{t('effectsSheetSubtitle')}</SheetParagraph>
         <View style={{ gap: 9 }}>
+          <Pressable
+            onPress={() => {
+              closeSheet();
+              setWhosMostOpen(true);
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 50, borderRadius: 15, backgroundColor: '#1b1629', borderWidth: 1, borderColor: 'rgba(139,92,246,.4)', paddingHorizontal: 16 }}
+          >
+            <Text style={{ fontSize: 20 }}>🗳️</Text>
+            <Text style={{ fontSize: 14.5, fontWeight: '600', color: '#fff' }}>{t('gameWhosMost')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              closeSheet();
+              setThisOrThatOpen(true);
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 50, borderRadius: 15, backgroundColor: '#1b1629', borderWidth: 1, borderColor: 'rgba(139,92,246,.4)', paddingHorizontal: 16 }}
+          >
+            <Text style={{ fontSize: 20 }}>⚡</Text>
+            <Text style={{ fontSize: 14.5, fontWeight: '600', color: '#fff' }}>{t('gameThisOrThat')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              closeSheet();
+              setFiveSecondOpen(true);
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 50, borderRadius: 15, backgroundColor: '#1b1629', borderWidth: 1, borderColor: 'rgba(139,92,246,.4)', paddingHorizontal: 16 }}
+          >
+            <Text style={{ fontSize: 20 }}>⏱️</Text>
+            <Text style={{ fontSize: 14.5, fontWeight: '600', color: '#fff' }}>{t('gameFiveSecond')}</Text>
+          </Pressable>
           {(RANK_GAMES as readonly { n: string; e: string }[]).map((g) => (
             <Pressable
               key={g.n}
@@ -227,7 +263,6 @@ export default function CallScreen() {
         chatOpen={chatOpen}
         locked={locked}
         unread={unread}
-        onEffects={openEffects}
         onMic={toggleMic}
         onCam={toggleCam}
         onShare={toggleShare}
@@ -237,6 +272,9 @@ export default function CallScreen() {
       />
       <View style={{ height: Math.max(insets.bottom, 8) }} />
 
+      {whosMostOpen ? <WhosMostOverlay participants={call.parts} onClose={() => setWhosMostOpen(false)} /> : null}
+      {thisOrThatOpen ? <ThisOrThatOverlay participants={call.parts} onClose={() => setThisOrThatOpen(false)} /> : null}
+      {fiveSecondOpen ? <FiveSecondOverlay participants={call.parts} onClose={() => setFiveSecondOpen(false)} /> : null}
       {rank ? <BlindRankOverlay /> : null}
       {spy ? <SpyGameOverlay /> : null}
       {truthOrDare ? <TruthOrDareOverlay /> : null}
