@@ -5,6 +5,7 @@ import { callChrome } from './dictionaries/callChrome';
 import { socialGamesDict } from './dictionaries/games/social';
 import { wordGamesDict } from './dictionaries/games/wordGames';
 import { drawQuizOkeyDict } from './dictionaries/games/drawQuizOkey';
+import { exposeMeDict } from './dictionaries/games/exposeMe';
 import { fiveSecondDict } from './dictionaries/games/fiveSecond';
 import { rankAndYuzbirDict } from './dictionaries/games/rankAndYuzbir';
 import { thisOrThatDict } from './dictionaries/games/thisOrThat';
@@ -30,7 +31,8 @@ export const dictionary = merge(
   rankAndYuzbirDict,
   whosMostDict,
   thisOrThatDict,
-  fiveSecondDict
+  fiveSecondDict,
+  exposeMeDict
 );
 
 export type TranslationKey = keyof typeof dictionary.en;

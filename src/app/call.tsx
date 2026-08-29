@@ -10,6 +10,7 @@ import { ChatPanel } from '@/components/call/ChatPanel';
 import { ColorClashOverlay } from '@/components/call/ColorClashOverlay';
 import { ControlsBar } from '@/components/call/ControlsBar';
 import { DrawGameOverlay } from '@/components/call/DrawGameOverlay';
+import { ExposeMeOverlay } from '@/components/call/ExposeMeOverlay';
 import { FiveSecondOverlay } from '@/components/call/FiveSecondOverlay';
 import { HeadsUpOverlay } from '@/components/call/HeadsUpOverlay';
 import { Okey101Overlay } from '@/components/call/Okey101Overlay';
@@ -73,6 +74,7 @@ export default function CallScreen() {
   const [whosMostOpen, setWhosMostOpen] = useState(false);
   const [thisOrThatOpen, setThisOrThatOpen] = useState(false);
   const [fiveSecondOpen, setFiveSecondOpen] = useState(false);
+  const [exposeMeOpen, setExposeMeOpen] = useState(false);
 
   useEffect(() => {
     if (!call) router.back();
@@ -121,6 +123,16 @@ export default function CallScreen() {
           >
             <Text style={{ fontSize: 20 }}>⏱️</Text>
             <Text style={{ fontSize: 14.5, fontWeight: '600', color: '#fff' }}>{t('gameFiveSecond')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              closeSheet();
+              setExposeMeOpen(true);
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 50, borderRadius: 15, backgroundColor: '#1b1629', borderWidth: 1, borderColor: 'rgba(139,92,246,.4)', paddingHorizontal: 16 }}
+          >
+            <Text style={{ fontSize: 20 }}>🙈</Text>
+            <Text style={{ fontSize: 14.5, fontWeight: '600', color: '#fff' }}>{t('gameExposeMe')}</Text>
           </Pressable>
           {(RANK_GAMES as readonly { n: string; e: string }[]).map((g) => (
             <Pressable
@@ -275,6 +287,7 @@ export default function CallScreen() {
       {whosMostOpen ? <WhosMostOverlay participants={call.parts} onClose={() => setWhosMostOpen(false)} /> : null}
       {thisOrThatOpen ? <ThisOrThatOverlay participants={call.parts} onClose={() => setThisOrThatOpen(false)} /> : null}
       {fiveSecondOpen ? <FiveSecondOverlay participants={call.parts} onClose={() => setFiveSecondOpen(false)} /> : null}
+      {exposeMeOpen ? <ExposeMeOverlay participants={call.parts} onClose={() => setExposeMeOpen(false)} /> : null}
       {rank ? <BlindRankOverlay /> : null}
       {spy ? <SpyGameOverlay /> : null}
       {truthOrDare ? <TruthOrDareOverlay /> : null}
