@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
 import { GradientView } from '@/components/ui/GradientView';
 import { useLanguage } from '@/context/LanguageContext';
+import { localizeDataName } from '@/lib/i18n/itemNames.data';
 import { person } from '@/lib/utils';
 
 type Room = {
@@ -16,7 +17,7 @@ type Room = {
 };
 
 export function GradRoomCard({ room, onJoin }: { room: Room; onJoin: () => void }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const shown = room.members.slice(0, 4).map((id) => person(id)).filter((p): p is NonNullable<typeof p> => !!p);
   const extra = room.members.length - shown.length;
 
@@ -27,7 +28,7 @@ export function GradRoomCard({ room, onJoin }: { room: Room; onJoin: () => void 
           <Text style={{ fontSize: 16 }}>{room.icon}</Text>
         </View>
         <Text style={{ fontSize: 14.5, fontWeight: '800', color: '#fff', letterSpacing: -0.2 }}>
-          {room.name}
+          {localizeDataName(room.name, language)}
           {room.locked ? ' 🔒' : ''}
         </Text>
         <Text style={{ fontSize: 11.5, color: 'rgba(255,255,255,.82)', marginTop: 2, marginBottom: 12 }}>{t('peopleHereCount', { count: room.members.length })}</Text>

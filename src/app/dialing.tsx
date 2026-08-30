@@ -6,12 +6,13 @@ import { Animated, Easing, Pressable, Text, View } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { localizeDataName } from '@/lib/i18n/itemNames.data';
 import { person } from '@/lib/utils';
 
 export default function DialingScreen() {
   const router = useRouter();
   const { pending, cancelDial, enterCall } = useApp();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [status, setStatus] = useState(t('calling'));
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -48,7 +49,8 @@ export default function DialingScreen() {
 
   if (!pending) return null;
 
-  const p = pending.kind === 'room' ? { name: pending.title, c1: '#7c3aed', c2: '#ec4899' } : person(pending.id) || { name: pending.title, c1: '#7c3aed', c2: '#ec4899' };
+  const dialTitle = pending.kind === 'room' ? localizeDataName(pending.title, language) : pending.title;
+  const p = pending.kind === 'room' ? { name: dialTitle, c1: '#7c3aed', c2: '#ec4899' } : person(pending.id) || { name: dialTitle, c1: '#7c3aed', c2: '#ec4899' };
 
   return (
     <View className="flex-1 bg-vbg items-center justify-center">
@@ -57,7 +59,7 @@ export default function DialingScreen() {
           <Avatar person={p} size={128} />
         </Animated.View>
         <View className="items-center" style={{ gap: 6 }}>
-          <Text style={{ fontSize: 26, fontWeight: '800', color: '#fff', letterSpacing: -0.4 }}>{pending.title}</Text>
+          <Text style={{ fontSize: 26, fontWeight: '800', color: '#fff', letterSpacing: -0.4 }}>{dialTitle}</Text>
           <Text style={{ fontSize: 14, color: '#8e879f' }}>{pending.kind === 'room' ? t('connectingToRoom') : status}</Text>
         </View>
       </View>

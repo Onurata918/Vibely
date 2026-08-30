@@ -10,6 +10,7 @@ import { Logo } from '@/components/ui/Logo';
 import { SheetActionRow, SheetParagraph, SheetTitle } from '@/components/ui/Sheet';
 import { useApp } from '@/context/AppContext';
 import { useLanguage, type Language } from '@/context/LanguageContext';
+import { localizeDataName } from '@/lib/i18n/itemNames.data';
 import { PEOPLE } from '@/lib/vibely-data';
 
 type PersonT = (typeof PEOPLE)[number];
@@ -32,7 +33,7 @@ export default function HomeScreen() {
         'busy',
         <View>
           <SheetTitle>{t('notAvailable', { name: p.name })}</SheetTitle>
-          <SheetParagraph>{t('busyModeMessage', { mood: p.mood })}</SheetParagraph>
+          <SheetParagraph>{t('busyModeMessage', { mood: localizeDataName(p.mood, language) })}</SheetParagraph>
           <Pressable
             onPress={() => {
               startDial({ kind: 'user', id: p.id, title: p.name });
@@ -56,7 +57,7 @@ export default function HomeScreen() {
       openSheet(
         'join-locked',
         <View>
-          <SheetTitle>{t('roomLocked', { name: r.name })}</SheetTitle>
+          <SheetTitle>{t('roomLocked', { name: localizeDataName(r.name, language) })}</SheetTitle>
           <SheetParagraph>{t('lockedRoomMessage')}</SheetParagraph>
           <Pressable
             onPress={() => {
@@ -183,7 +184,7 @@ export default function HomeScreen() {
                   <Avatar person={p} size={40} dot state={p.state} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 13.5, fontWeight: '600', color: '#fff' }}>{p.name}</Text>
-                    <Text style={{ fontSize: 12, color: '#8e879f' }}>{p.status}</Text>
+                    <Text style={{ fontSize: 12, color: '#8e879f' }}>{localizeDataName(p.status, language)}</Text>
                   </View>
                   <Pressable onPress={() => call(p)} className="items-center justify-center" style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#8b5cf6' }}>
                     <Video size={16} color="#fff" />
@@ -202,7 +203,7 @@ export default function HomeScreen() {
                     <Avatar person={p} size={58} dot state={p.state} ring />
                     <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#fff', marginTop: 7 }}>{p.name}</Text>
                     <Text style={{ fontSize: 10, color: '#635c73', marginBottom: 9 }} numberOfLines={1}>
-                      {p.status}
+                      {localizeDataName(p.status, language)}
                     </Text>
                     <View style={{ width: '100%', height: 29, borderRadius: 9, backgroundColor: '#8b5cf6', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                       <Video size={12} color="#fff" />
@@ -231,7 +232,7 @@ export default function HomeScreen() {
                     <Text style={{ fontSize: 12, fontWeight: '600', color: '#fff' }} numberOfLines={1}>
                       {p.name}
                     </Text>
-                    <Text style={{ fontSize: 10, color: p.mood === 'Uygun' ? '#4ade80' : p.mood === 'Oyunda' ? '#a78bfa' : '#f87171' }}>{p.mood}</Text>
+                    <Text style={{ fontSize: 10, color: p.mood === 'Uygun' ? '#4ade80' : p.mood === 'Oyunda' ? '#a78bfa' : '#f87171' }}>{localizeDataName(p.mood, language)}</Text>
                   </View>
                   <Pressable onPress={() => call(p)} className="items-center justify-center" style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,.1)' }}>
                     <Video size={13} color="#fff" />

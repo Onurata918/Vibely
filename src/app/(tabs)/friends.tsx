@@ -7,13 +7,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/ui/Avatar';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { localizeDataName } from '@/lib/i18n/itemNames.data';
 import { PEOPLE } from '@/lib/vibely-data';
 
 export default function FriendsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { fquery, setFquery, startDial } = useApp();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const q = fquery.trim().toLocaleLowerCase('tr-TR');
   const list = useMemo(() => PEOPLE.filter((p) => p.name.toLocaleLowerCase('tr-TR').includes(q)), [q]);
@@ -30,7 +31,7 @@ export default function FriendsScreen() {
       <Avatar person={p} size={44} dot state={p.state} />
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 14.5, fontWeight: '600', color: '#fff' }}>{p.name}</Text>
-        <Text style={{ fontSize: 12, color: '#635c73', marginTop: 2 }}>{p.status}</Text>
+        <Text style={{ fontSize: 12, color: '#635c73', marginTop: 2 }}>{localizeDataName(p.status, language)}</Text>
       </View>
       <Pressable onPress={() => call(p)} className="items-center justify-center" style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#8b5cf6' }}>
         <Video size={15} color="#fff" />

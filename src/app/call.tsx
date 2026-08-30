@@ -25,6 +25,7 @@ import { WhosMostOverlay } from '@/components/call/WhosMostOverlay';
 import { SheetActionRow, SheetParagraph, SheetTitle } from '@/components/ui/Sheet';
 import { useApp, type RankGameKey } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { localizeDataName } from '@/lib/i18n/itemNames.data';
 import { localizeName } from '@/lib/i18n/itemNames';
 import { GAMES, PEOPLE, RANK_GAMES } from '@/lib/vibely-data';
 
@@ -81,6 +82,8 @@ export default function CallScreen() {
   }, [call, router]);
 
   if (!call) return null;
+
+  const callTitle = call.kind === 'room' ? localizeDataName(call.title, language) : call.title;
 
   const goBack = () => {
     toast(t('inBackgroundToast'));
@@ -216,7 +219,7 @@ export default function CallScreen() {
           <SheetActionRow
             key={p.id}
             label={p.name}
-            sub={p.status}
+            sub={localizeDataName(p.status, language)}
             avatarPerson={p}
             trailing={t('inviteChip')}
             onPress={() => {
@@ -235,7 +238,7 @@ export default function CallScreen() {
       <View>
         <SheetTitle>{t('leaveRoomTitle')}</SheetTitle>
         <SheetParagraph>
-          <Text style={{ fontWeight: '700', color: '#fff' }}>{call.title}</Text> {t('leaveRoomConfirm')}{t('leaveRoomConfirmSuffix')}
+          <Text style={{ fontWeight: '700', color: '#fff' }}>{callTitle}</Text> {t('leaveRoomConfirm')}{t('leaveRoomConfirmSuffix')}
         </SheetParagraph>
         <Pressable
           onPress={() => {
@@ -253,7 +256,7 @@ export default function CallScreen() {
 
   return (
     <View className="flex-1 bg-vbg" style={{ paddingTop: insets.top }}>
-      <CallHeader title={call.title} count={call.parts.length + 1} startedAt={call.started} onBack={goBack} onEffects={openEffects} onGames={openGames} onInvite={openInvite} />
+      <CallHeader title={callTitle} count={call.parts.length + 1} startedAt={call.started} onBack={goBack} onEffects={openEffects} onGames={openGames} onInvite={openInvite} />
       <LockBanner locked={locked} onPress={toggleLock} />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 8 }}>
