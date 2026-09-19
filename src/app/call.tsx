@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { Coins } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,12 +23,18 @@ import { ThisOrThatOverlay } from '@/components/call/ThisOrThatOverlay';
 import { TruthOrDareOverlay } from '@/components/call/TruthOrDareOverlay';
 import { VampireGameOverlay } from '@/components/call/VampireGameOverlay';
 import { WhosMostOverlay } from '@/components/call/WhosMostOverlay';
+import { PaywallOverlay } from '@/components/payments/PaywallOverlay';
 import { SheetActionRow, SheetParagraph, SheetTitle } from '@/components/ui/Sheet';
 import { useApp, type RankGameKey } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePayments } from '@/context/PaymentsContext';
 import { localizeDataName } from '@/lib/i18n/itemNames.data';
 import { localizeName } from '@/lib/i18n/itemNames';
+import { isCallBlocked } from '@/lib/payments/engine';
+import { GAME_COST_HIGH, GAME_COST_LOW } from '@/lib/payments/types';
 import { GAMES, PEOPLE, RANK_GAMES } from '@/lib/vibely-data';
+
+const CALL_TICK_SECONDS = 10;
 
 export default function CallScreen() {
   const router = useRouter();
@@ -76,10 +83,28 @@ export default function CallScreen() {
   const [thisOrThatOpen, setThisOrThatOpen] = useState(false);
   const [fiveSecondOpen, setFiveSecondOpen] = useState(false);
   const [exposeMeOpen, setExposeMeOpen] = useState(false);
+  const [limitPaywallOpen, setLimitPaywallOpen] = useState(false);
+  const [jetonPaywallOpen, setJetonPaywallOpen] = useState(false);
+  const payments = usePayments();
 
   useEffect(() => {
     if (!call) router.back();
   }, [call, router]);
+
+  // Premium olmayan kullanicilar icin gunluk/aylik konusma suresini takip et;
+  // sinira ulasinca zorunlu paywall'i ac.
+  useEffect(() => {
+    if (!call || payments.payments.isPremium) return;
+    const id = setInterval(() => {
+      payments.tickCallSeconds(CALL_TICK_SECONDS);
+    }, CALL_TICK_SECONDS * 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [call, payments.payments.isPremium]);
+
+  useEffect(() => {
+    if (isCallBlocked(payments.payments)) setLimitPaywallOpen(true);
+  }, [payments.payments]);
 
   if (!call) return null;
 
@@ -155,18 +180,35 @@ export default function CallScreen() {
     );
   };
 
+  // Premium kullanicilar ucretsiz oynar; degilse jeton bakiyesi yetiyorsa dusulur,
+  // yetmiyorsa jeton paywall'i acilir.
+  const startGame = (label: string, cost: number, open: () => void) => {
+    if (!payments.payments.isPremium) {
+      if (payments.payments.jetonBalance < cost) {
+        closeSheet();
+        toast(t('payGameNeedJetonsToast', { cost, game: label }));
+        setJetonPaywallOpen(true);
+        return;
+      }
+      payments.spendJetonsForGame(cost);
+      toast(t('payGameChargedToast', { cost }));
+    }
+    closeSheet();
+    open();
+  };
+
   const openGames = () => {
-    const builtInGames: { emoji: string; label: string; onPress: () => void }[] = [
-      { emoji: '🕵️', label: t('gameSpy'), onPress: openSpyGame },
-      { emoji: '🎲', label: t('gameTruthOrDare'), onPress: openTruthOrDare },
-      { emoji: '🧛', label: t('gameVampire'), onPress: openVampireGame },
-      { emoji: '🤳', label: t('gameHeadsUp'), onPress: openHeadsUp },
-      { emoji: '🎴', label: t('gameUno'), onPress: () => setColorClashOpen(true) },
-      { emoji: '🎨', label: t('gameDraw'), onPress: openDrawGame },
-      { emoji: '🚫', label: t('gameTabu'), onPress: openTabu },
-      { emoji: '🧠', label: t('gameQuiz'), onPress: openQuiz },
-      { emoji: '🀄', label: t('gameOkey'), onPress: openOkeyGame },
-      { emoji: '🎲', label: t('gameYuzBir'), onPress: () => setOkey101Open(true) },
+    const builtInGames: { emoji: string; label: string; cost: number; onPress: () => void }[] = [
+      { emoji: '🕵️', label: t('gameSpy'), cost: GAME_COST_LOW, onPress: openSpyGame },
+      { emoji: '🎲', label: t('gameTruthOrDare'), cost: GAME_COST_LOW, onPress: openTruthOrDare },
+      { emoji: '🧛', label: t('gameVampire'), cost: GAME_COST_LOW, onPress: openVampireGame },
+      { emoji: '🤳', label: t('gameHeadsUp'), cost: GAME_COST_LOW, onPress: openHeadsUp },
+      { emoji: '🎴', label: t('gameUno'), cost: GAME_COST_HIGH, onPress: () => setColorClashOpen(true) },
+      { emoji: '🎨', label: t('gameDraw'), cost: GAME_COST_LOW, onPress: openDrawGame },
+      { emoji: '🚫', label: t('gameTabu'), cost: GAME_COST_LOW, onPress: openTabu },
+      { emoji: '🧠', label: t('gameQuiz'), cost: GAME_COST_LOW, onPress: openQuiz },
+      { emoji: '🀄', label: t('gameOkey'), cost: GAME_COST_HIGH, onPress: openOkeyGame },
+      { emoji: '🎲', label: t('gameYuzBir'), cost: GAME_COST_HIGH, onPress: () => setOkey101Open(true) },
     ];
     openSheet(
       'games',
@@ -174,19 +216,36 @@ export default function CallScreen() {
         <SheetTitle>{t('gamesSheetTitle')}</SheetTitle>
         <SheetParagraph>{t('gamesSheetSubtitle')}</SheetParagraph>
         <View style={{ gap: 9 }}>
-          {builtInGames.map((g) => (
-            <Pressable
-              key={g.label}
-              onPress={() => {
-                closeSheet();
-                g.onPress();
-              }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 50, borderRadius: 15, backgroundColor: '#1b1629', borderWidth: 1, borderColor: 'rgba(139,92,246,.4)', paddingHorizontal: 16 }}
-            >
-              <Text style={{ fontSize: 20 }}>{g.emoji}</Text>
-              <Text style={{ fontSize: 14.5, fontWeight: '600', color: '#fff' }}>{g.label}</Text>
-            </Pressable>
-          ))}
+          {builtInGames.map((g) => {
+            const free = payments.payments.isPremium;
+            const affordable = free || payments.payments.jetonBalance >= g.cost;
+            return (
+              <Pressable
+                key={g.label}
+                onPress={() => startGame(g.label, g.cost, g.onPress)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 50, borderRadius: 15, backgroundColor: '#1b1629', borderWidth: 1, borderColor: 'rgba(139,92,246,.4)', paddingHorizontal: 16 }}
+              >
+                <Text style={{ fontSize: 20 }}>{g.emoji}</Text>
+                <Text style={{ flex: 1, fontSize: 14.5, fontWeight: '600', color: '#fff' }}>{g.label}</Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    height: 24,
+                    paddingHorizontal: 9,
+                    borderRadius: 999,
+                    backgroundColor: free ? 'rgba(74,222,128,.15)' : affordable ? 'rgba(250,204,21,.13)' : 'rgba(248,113,113,.13)',
+                  }}
+                >
+                  {free ? null : <Coins size={12} color={affordable ? '#facc15' : '#f87171'} />}
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: free ? '#4ade80' : affordable ? '#facc15' : '#f87171' }}>
+                    {free ? t('payGameFreeBadge') : t('payGameCostBadge', { cost: g.cost })}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
           {(GAMES as readonly { n: string; e: string }[])
             .filter((g) => g.n !== 'Doğruluk mu?' && g.n !== 'Çizim Tahmin' && g.n !== 'Bil Bakalım')
             .map((g) => (
@@ -291,6 +350,8 @@ export default function CallScreen() {
       {thisOrThatOpen ? <ThisOrThatOverlay participants={call.parts} onClose={() => setThisOrThatOpen(false)} /> : null}
       {fiveSecondOpen ? <FiveSecondOverlay participants={call.parts} onClose={() => setFiveSecondOpen(false)} /> : null}
       {exposeMeOpen ? <ExposeMeOverlay participants={call.parts} onClose={() => setExposeMeOpen(false)} /> : null}
+      {limitPaywallOpen ? <PaywallOverlay reason="limit" onClose={() => setLimitPaywallOpen(false)} /> : null}
+      {jetonPaywallOpen ? <PaywallOverlay reason="manual" focus="jetons" onClose={() => setJetonPaywallOpen(false)} /> : null}
       {rank ? <BlindRankOverlay /> : null}
       {spy ? <SpyGameOverlay /> : null}
       {truthOrDare ? <TruthOrDareOverlay /> : null}

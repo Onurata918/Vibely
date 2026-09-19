@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import type { PaymentsState } from './payments/types';
 import type { Account, CurrentUser, HistoryItem } from './types';
 
 // Orijinal prototipteki `store` nesnesinin (localStorage) AsyncStorage karsiligi.
@@ -8,6 +9,7 @@ const KEYS = {
   accounts: 'vibely_accounts',
   history: 'vibely_history',
   okey101Sound: 'vibely_okey101_sound',
+  payments: 'vibely_payments',
 } as const;
 
 async function readJSON<T>(key: string, fallback: T): Promise<T> {
@@ -43,4 +45,7 @@ export const store = {
 
   getOkey101Sound: () => readJSON<boolean>(KEYS.okey101Sound, true),
   setOkey101Sound: (v: boolean) => writeJSON(KEYS.okey101Sound, v),
+
+  getPayments: () => readJSON<PaymentsState | null>(KEYS.payments, null),
+  setPayments: (v: PaymentsState) => writeJSON(KEYS.payments, v),
 };

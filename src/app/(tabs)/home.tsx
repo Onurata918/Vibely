@@ -1,15 +1,18 @@
 import { useRouter } from 'expo-router';
-import { Bell, Check, Globe, Plus, Search, UserPlus, Video, X } from 'lucide-react-native';
+import { Bell, Check, Coins, Globe, PlayCircle, Plus, Search, Sparkles, UserPlus, Video, X } from 'lucide-react-native';
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GradRoomCard } from '@/components/RoomCard';
+import { PaywallOverlay } from '@/components/payments/PaywallOverlay';
 import { Avatar } from '@/components/ui/Avatar';
 import { Logo } from '@/components/ui/Logo';
 import { SheetActionRow, SheetParagraph, SheetTitle } from '@/components/ui/Sheet';
 import { useApp } from '@/context/AppContext';
 import { useLanguage, type Language } from '@/context/LanguageContext';
+import { usePayments } from '@/context/PaymentsContext';
+import { AD_REWARD_JETONS } from '@/lib/payments/types';
 import { localizeDataName } from '@/lib/i18n/itemNames.data';
 import { PEOPLE } from '@/lib/vibely-data';
 
@@ -20,6 +23,18 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { query, setQuery, rooms, startDial, openSheet, closeSheet, toast, createRoom, enterCall } = useApp();
   const { t, language, setLanguage } = useLanguage();
+  const payments = usePayments();
+  const [paywallFocus, setPaywallFocus] = React.useState<'premium' | 'jetons' | null>(null);
+  const [watchingAd, setWatchingAd] = React.useState(false);
+
+  const watchAdForJetons = () => {
+    setWatchingAd(true);
+    setTimeout(() => {
+      setWatchingAd(false);
+      payments.watchAdForJetons();
+      toast(t('payAdRewardToast', { count: AD_REWARD_JETONS }));
+    }, 1800);
+  };
 
   const q = query.trim().toLocaleLowerCase('tr-TR');
   const filtered = useMemo(() => PEOPLE.filter((p) => p.name.toLocaleLowerCase('tr-TR').includes(q)), [q]);
@@ -136,20 +151,55 @@ export default function HomeScreen() {
     <View className="flex-1 bg-vbg" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center justify-between" style={{ paddingHorizontal: 20, paddingVertical: 8 }}>
         <Logo size="sm" />
-        <View className="flex-row items-center" style={{ gap: 6 }}>
-          <Pressable
-            onPress={languageSheet}
-            className="flex-row items-center justify-center bg-vinput rounded-full"
-            style={{ height: 40, paddingHorizontal: 12, gap: 5 }}
-          >
-            <Globe size={15} color="#cfc9db" />
-            <Text style={{ fontSize: 11.5, fontWeight: '700', color: '#cfc9db' }}>{language.toUpperCase()}</Text>
+        <View className="flex-row items-start" style={{ gap: 6 }}>
+          <Pressable onPress={() => setPaywallFocus('premium')} style={{ alignItems: 'center', gap: 3, width: 46 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(139,92,246,.18)' }}>
+              <Sparkles size={15} color="#a78bfa" />
+            </View>
+            <Text style={{ fontSize: 8.5, fontWeight: '700', color: '#a78bfa' }} numberOfLines={1}>
+              {t('payLabelPremium')}
+            </Text>
           </Pressable>
-          <Pressable onPress={showNotifications} className="items-center justify-center bg-vinput rounded-full" style={{ width: 40, height: 40 }}>
-            <Bell size={16} color="#cfc9db" />
+          <Pressable onPress={() => setPaywallFocus('jetons')} style={{ alignItems: 'center', gap: 3, width: 46 }}>
+            <View className="bg-vinput" style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+              <Coins size={15} color="#facc15" />
+            </View>
+            <Text style={{ fontSize: 8.5, fontWeight: '700', color: '#fff' }} numberOfLines={1}>
+              {payments.payments.jetonBalance} {t('payLabelCoin')}
+            </Text>
           </Pressable>
-          <Pressable onPress={addFriendSheet} className="items-center justify-center bg-vinput rounded-full" style={{ width: 40, height: 40 }}>
-            <UserPlus size={16} color="#cfc9db" />
+          <Pressable onPress={watchAdForJetons} disabled={watchingAd} style={{ alignItems: 'center', gap: 3, width: 46, opacity: watchingAd ? 0.6 : 1 }}>
+            <View className="bg-vinput" style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+              {watchingAd ? <ActivityIndicator size="small" color="#3b82f6" /> : <PlayCircle size={15} color="#3b82f6" />}
+            </View>
+            <Text style={{ fontSize: 8.5, fontWeight: '700', color: '#3b82f6' }} numberOfLines={1}>
+              {t('payLabelWatchAd')}
+            </Text>
+          </Pressable>
+          <Pressable onPress={languageSheet} style={{ alignItems: 'center', gap: 3, width: 46 }}>
+            <View className="bg-vinput" style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 2 }}>
+              <Globe size={12} color="#cfc9db" />
+              <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#cfc9db' }}>{language.toUpperCase()}</Text>
+            </View>
+            <Text style={{ fontSize: 8.5, fontWeight: '700', color: '#cfc9db' }} numberOfLines={1}>
+              {t('headerLabelLanguage')}
+            </Text>
+          </Pressable>
+          <Pressable onPress={showNotifications} style={{ alignItems: 'center', gap: 3, width: 46 }}>
+            <View className="bg-vinput" style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+              <Bell size={15} color="#cfc9db" />
+            </View>
+            <Text style={{ fontSize: 8.5, fontWeight: '700', color: '#cfc9db' }} numberOfLines={1}>
+              {t('headerLabelAlerts')}
+            </Text>
+          </Pressable>
+          <Pressable onPress={addFriendSheet} style={{ alignItems: 'center', gap: 3, width: 46 }}>
+            <View className="bg-vinput" style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+              <UserPlus size={15} color="#cfc9db" />
+            </View>
+            <Text style={{ fontSize: 8.5, fontWeight: '700', color: '#cfc9db' }} numberOfLines={1}>
+              {t('headerLabelInvite')}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -249,6 +299,7 @@ export default function HomeScreen() {
           </>
         )}
       </ScrollView>
+      {paywallFocus ? <PaywallOverlay reason="manual" focus={paywallFocus} onClose={() => setPaywallFocus(null)} /> : null}
     </View>
   );
 }
