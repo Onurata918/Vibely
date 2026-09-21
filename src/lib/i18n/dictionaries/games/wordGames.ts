@@ -7,6 +7,11 @@ export const wordGamesDict = {
     todTruthBadge: 'TRUTH 🤔',
     todDareBadge: 'DARE 😈',
     todNextPlayerButton: 'Next Player',
+    todFinishButton: 'Finish',
+    todQuestionCounter: 'QUESTION {current}/{total}',
+    todFinishedTitle: 'Game over!',
+    todFinishedSubtitle: 'All {count} questions have been played.',
+    todFinishedClose: 'Close',
 
     // Taboo
     tabuNextDescriberHeader: 'NEXT DESCRIBER',
@@ -43,6 +48,11 @@ export const wordGamesDict = {
     todTruthBadge: 'DOĞRULUK 🤔',
     todDareBadge: 'CESARET 😈',
     todNextPlayerButton: 'Sıradaki Oyuncu',
+    todFinishButton: 'Bitir',
+    todQuestionCounter: 'SORU {current}/{total}',
+    todFinishedTitle: 'Oyun bitti!',
+    todFinishedSubtitle: 'Toplam {count} sorunun hepsi oynandı.',
+    todFinishedClose: 'Kapat',
 
     // Tabu
     tabuNextDescriberHeader: 'SIRADAKİ ANLATICI',

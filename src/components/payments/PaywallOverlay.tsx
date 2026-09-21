@@ -84,6 +84,9 @@ export function PaywallOverlay({
       {payments.payments.isPremium ? (
         <View style={{ backgroundColor: 'rgba(74,222,128,.12)', borderWidth: 1, borderColor: 'rgba(74,222,128,.4)', borderRadius: 14, padding: 14, alignItems: 'center' }}>
           <Text style={{ color: '#4ade80', fontWeight: '800', fontSize: 14 }}>✓ {t('payPremiumActiveLabel')}</Text>
+          <Pressable onPress={() => { payments.cancelPremium(); toast(t('payPremiumCancelledToast')); }} style={{ marginTop: 10 }}>
+            <Text style={{ color: '#f87171', fontWeight: '700', fontSize: 12.5, textDecorationLine: 'underline' }}>{t('payCancelPremium')}</Text>
+          </Pressable>
         </View>
       ) : (
         <>

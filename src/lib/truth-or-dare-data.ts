@@ -1,3 +1,6 @@
+/** Her oyuncuya sırayla sorulacak soru sayısı (jetonlu sistem olduğu için sınırsız değil). */
+export const TD_QUESTIONS_PER_PLAYER = 5;
+
 // Doğruluk mu Cesaret mi? — genel/aile dostu, herkesin oynayabileceği sorular ve görevler.
 export const TRUTH_QUESTIONS: readonly string[] = [
   'En garip alışkanlığın nedir?',

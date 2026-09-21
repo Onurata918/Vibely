@@ -48,7 +48,7 @@ import {
 import { buildDeck, cardScoreValue, isPlayable, shuffle, stepPlayerIndex, type UnoCard, type UnoColor } from '@/lib/uno-data';
 import { SPY_LOCATIONS, type SpyLocation } from '@/lib/spy-data';
 import { SPY_LOCATIONS_EN } from '@/lib/spy-data.en';
-import { DARE_CHALLENGES, TRUTH_QUESTIONS } from '@/lib/truth-or-dare-data';
+import { DARE_CHALLENGES, TD_QUESTIONS_PER_PLAYER, TRUTH_QUESTIONS } from '@/lib/truth-or-dare-data';
 import { callDurationLabel, isMail, pad, person, shuffledIds } from '@/lib/utils';
 import {
   BEST_PLAYERS_2026,
@@ -263,6 +263,9 @@ type AppContextValue = {
     index: number;
     mode: TdMode;
     prompt: string | null;
+    turn: number;
+    total: number;
+    finished: boolean;
   } | null;
   openTruthOrDare: () => void;
   closeTruthOrDare: () => void;
@@ -539,6 +542,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [tdIndex, setTdIndex] = useState(0);
   const [tdMode, setTdMode] = useState<TdMode>('choose');
   const [tdPrompt, setTdPrompt] = useState<string | null>(null);
+  const [tdTurn, setTdTurn] = useState(0);
+  const [tdFinished, setTdFinished] = useState(false);
   const [tdUsedTruths, setTdUsedTruths] = useState<string[]>([]);
   const [tdUsedDares, setTdUsedDares] = useState<string[]>([]);
 
@@ -1234,6 +1239,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTdIndex(0);
     setTdMode('choose');
     setTdPrompt(null);
+    setTdTurn(0);
+    setTdFinished(false);
     setTdUsedTruths([]);
     setTdUsedDares([]);
     setTdActive(true);
@@ -1260,15 +1267,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [tdUsedDares]);
 
   const nextTdPlayer = useCallback(() => {
+    // Her oyuncuya sırayla TD_QUESTIONS_PER_PLAYER soru; toplam = oyuncu sayısı × 5, sonra oyun biter.
+    if (tdTurn + 1 >= tdOrder.length * TD_QUESTIONS_PER_PLAYER) {
+      setTdFinished(true);
+      return;
+    }
+    setTdTurn((n) => n + 1);
     setTdIndex((i) => (tdOrder.length ? (i + 1) % tdOrder.length : 0));
     setTdMode('choose');
     setTdPrompt(null);
-  }, [tdOrder.length]);
+  }, [tdOrder.length, tdTurn]);
 
   const truthOrDare = useMemo(() => {
     if (!tdActive) return null;
-    return { active: tdActive, order: tdOrder, index: tdIndex, mode: tdMode, prompt: tdPrompt };
-  }, [tdActive, tdOrder, tdIndex, tdMode, tdPrompt]);
+    return { active: tdActive, order: tdOrder, index: tdIndex, mode: tdMode, prompt: tdPrompt, turn: tdTurn, total: tdOrder.length * TD_QUESTIONS_PER_PLAYER, finished: tdFinished };
+  }, [tdActive, tdOrder, tdIndex, tdMode, tdPrompt, tdTurn, tdFinished]);
 
   // ---------------------------------------------------------------------
   // Vampir Köylü

@@ -28,7 +28,20 @@ export function TruthOrDareOverlay() {
 
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 26 }}>
         <View style={{ width: '100%', alignItems: 'center', gap: 22 }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#635c73', letterSpacing: 0.6 }}>{t('todNextPlayerHeader')}</Text>
+          {td.finished ? (
+            <>
+              <Text style={{ fontSize: 44 }}>🎉</Text>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff' }}>{t('todFinishedTitle')}</Text>
+              <Text style={{ fontSize: 14, color: '#a59fb8', textAlign: 'center' }}>{t('todFinishedSubtitle', { count: td.total })}</Text>
+              <Pressable onPress={closeTruthOrDare} style={{ marginTop: 8 }}>
+                <View style={{ height: 52, paddingHorizontal: 26, borderRadius: 16, backgroundColor: '#1b1629', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14.5 }}>{t('todFinishedClose')}</Text>
+                </View>
+              </Pressable>
+            </>
+          ) : (
+            <>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#635c73', letterSpacing: 0.6 }}>{t('todNextPlayerHeader')} · {t('todQuestionCounter', { current: td.turn + 1, total: td.total })}</Text>
           <Avatar person={currentPlayer} size={64} />
           <Text style={{ fontSize: 19, fontWeight: '800', color: '#fff' }}>{currentPlayer?.name}</Text>
 
@@ -61,10 +74,12 @@ export function TruthOrDareOverlay() {
 
               <Pressable onPress={nextTdPlayer} style={{ marginTop: 4 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 52, paddingHorizontal: 22, borderRadius: 16, backgroundColor: '#1b1629' }}>
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14.5 }}>{t('todNextPlayerButton')}</Text>
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14.5 }}>{td.turn + 1 >= td.total ? t('todFinishButton') : t('todNextPlayerButton')}</Text>
                   <ArrowRight size={16} color="#fff" />
                 </View>
               </Pressable>
+            </>
+          )}
             </>
           )}
         </View>
