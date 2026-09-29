@@ -176,7 +176,7 @@ type AppContextValue = {
     confirm: string;
     agreed: boolean;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
-  socialLogin: (provider: 'Google' | 'Apple' | 'Discord') => void;
+  socialLogin: (provider: 'Google' | 'Apple') => void;
   logout: () => void;
   updateProfile: (name: string, username: string) => void;
 
@@ -753,7 +753,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const socialLogin = useCallback(
-    (provider: 'Google' | 'Apple' | 'Discord') => {
+    (provider: 'Google' | 'Apple') => {
       const u: CurrentUser = {
         username: `${provider.toLowerCase()}_user`,
         name: `${provider} ${language === 'en' ? 'User' : 'Kullanıcısı'}`,

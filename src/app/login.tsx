@@ -95,7 +95,7 @@ export default function LoginScreen() {
         </View>
 
         <View className="flex-row" style={{ gap: 9 }}>
-          {(['Google', 'Apple', 'Discord'] as const).map((p) => (
+          {(['Google', 'Apple'] as const).map((p) => (
             <Pressable
               key={p}
               onPress={() => socialLogin(p)}
