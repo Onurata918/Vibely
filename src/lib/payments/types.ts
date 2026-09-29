@@ -14,8 +14,8 @@ export const JETON_EXTEND_COST = 20;
 export const JETON_EXTEND_SECONDS = 30 * 60; // 30 dk
 
 // Oyun basina jeton ucreti: Okey / 101 Okey / Color Clash daha pahali, digerleri standart.
-export const GAME_COST_HIGH = 20;
-export const GAME_COST_LOW = 10;
+export const GAME_COST_HIGH = 10;
+export const GAME_COST_LOW = 5;
 
 export const AD_REWARD_JETONS = 2;
 // Gunluk reklam siniri yok. Kotuye kullanima karsi sonradan sonlu bir sayiya cekilebilir.
