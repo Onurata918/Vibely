@@ -7,7 +7,7 @@ import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePayments } from '@/context/PaymentsContext';
 import { formatPrice, JETON_PACKAGES, packagePrice, PREMIUM_PLANS, planPrice, type PaymentsRegion, type PremiumPlanId } from '@/lib/payments/plans';
-import { AD_EXTEND_SECONDS, AD_REWARD_JETONS, JETON_EXTEND_COST, JETON_EXTEND_SECONDS } from '@/lib/payments/types';
+import { AD_REWARD_JETONS, JETON_EXTEND_COST, JETON_EXTEND_SECONDS, JETON_EXTEND_SMALL_COST, JETON_EXTEND_SMALL_SECONDS } from '@/lib/payments/types';
 
 const PLAN_LABEL_KEY: Record<PremiumPlanId, string> = {
   monthly: 'payPlanMonthly',
@@ -30,28 +30,23 @@ export function PaywallOverlay({
   const payments = usePayments();
   const region: PaymentsRegion = language === 'tr' ? 'TR' : 'UK';
 
-  const [watchingAd, setWatchingAd] = useState<'jetons' | 'time' | null>(null);
+  const [watchingAd, setWatchingAd] = useState(false);
   const [buyingPlan, setBuyingPlan] = useState<PremiumPlanId | null>(null);
 
   const fmt = (n: number) => formatPrice(n, region);
 
-  const runFakeAd = (kind: 'jetons' | 'time') => {
-    setWatchingAd(kind);
+  const runFakeAd = () => {
+    setWatchingAd(true);
     setTimeout(() => {
-      setWatchingAd(null);
-      if (kind === 'jetons') {
-        payments.watchAdForJetons();
-        toast(t('payAdRewardToast', { count: AD_REWARD_JETONS }));
-      } else {
-        payments.watchAdForTimeExtension();
-        toast(t('payTimeExtendedToast', { minutes: AD_EXTEND_SECONDS / 60 }));
-      }
+      setWatchingAd(false);
+      payments.watchAdForJetons();
+      toast(t('payAdRewardToast', { count: AD_REWARD_JETONS }));
     }, 1800);
   };
 
-  const spendJetons = () => {
-    payments.spendJetonsForTime();
-    toast(t('payTimeExtendedToast', { minutes: JETON_EXTEND_SECONDS / 60 }));
+  const spendJetons = (cost: number, seconds: number) => {
+    payments.spendJetonsForTime(cost, seconds);
+    toast(t('payTimeExtendedToast', { minutes: seconds / 60 }));
   };
 
   const buyPremium = (planId: PremiumPlanId) => {
@@ -102,7 +97,7 @@ export function PaywallOverlay({
 
           <View style={{ gap: 10 }}>
             {PREMIUM_PLANS.map((plan) => {
-              const { price, original } = planPrice(plan, region);
+              const { price } = planPrice(plan, region);
               const isBest = plan.id === 'semiannual';
               return (
                 <Pressable
@@ -130,9 +125,10 @@ export function PaywallOverlay({
                       ) : null}
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7, marginTop: 4 }}>
-                      {original ? <Text style={{ color: '#635c73', fontSize: 12.5, textDecorationLine: 'line-through' }}>{fmt(original)}</Text> : null}
                       <Text style={{ color: '#fff', fontWeight: '800', fontSize: 17 }}>{fmt(price)}</Text>
-                      <Text style={{ color: '#8e879f', fontSize: 11 }}>{t('payPerMonthShort')}</Text>
+                      <Text style={{ color: '#8e879f', fontSize: 11 }}>
+                        {plan.months === 1 ? t('payPerMonthShort') : t('payPerMonthEquivalent', { price: fmt(Math.round((price / plan.months) * 100) / 100) })}
+                      </Text>
                     </View>
                   </View>
                   {buyingPlan === plan.id ? (
@@ -177,11 +173,11 @@ export function PaywallOverlay({
       </View>
 
       <Pressable
-        onPress={() => runFakeAd('jetons')}
-        disabled={watchingAd !== null}
+        onPress={runFakeAd}
+        disabled={watchingAd}
         style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 46, borderRadius: 14, backgroundColor: '#1b1629', borderWidth: 1, borderColor: 'rgba(255,255,255,.08)', marginTop: 2 }}
       >
-        {watchingAd === 'jetons' ? <ActivityIndicator size="small" color="#3b82f6" /> : <PlayCircle size={16} color="#3b82f6" />}
+        {watchingAd ? <ActivityIndicator size="small" color="#3b82f6" /> : <PlayCircle size={16} color="#3b82f6" />}
         <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>{t('payWatchAdEarnJetons', { count: AD_REWARD_JETONS })}</Text>
       </Pressable>
     </View>
@@ -209,42 +205,63 @@ export function PaywallOverlay({
             <View style={{ alignItems: 'center', gap: 6 }}>
               <Text style={{ fontSize: 34 }}>⏳</Text>
               <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', textAlign: 'center' }}>{t('payLimitReachedTitle')}</Text>
-              <Text style={{ fontSize: 12.5, color: '#8e879f', textAlign: 'center' }}>{t('payLimitReachedSubtitle')}</Text>
+              <Text style={{ fontSize: 12.5, color: '#8e879f', textAlign: 'center' }}>
+                {payments.payments.isPremium ? t('payLimitReachedSubtitlePremium') : t('payLimitReachedSubtitle')}
+              </Text>
             </View>
 
-            <Pressable
-              onPress={spendJetons}
-              disabled={payments.payments.jetonBalance < JETON_EXTEND_COST}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 12,
-                backgroundColor: '#141020',
-                borderWidth: 1,
-                borderColor: 'rgba(250,204,21,.35)',
-                borderRadius: 16,
-                padding: 14,
-                opacity: payments.payments.jetonBalance < JETON_EXTEND_COST ? 0.5 : 1,
-              }}
-            >
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(250,204,21,.15)', alignItems: 'center', justifyContent: 'center' }}>
-                <Coins size={19} color="#facc15" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{t('payExtendWithJetons', { cost: JETON_EXTEND_COST, minutes: JETON_EXTEND_SECONDS / 60 })}</Text>
-                {payments.payments.jetonBalance < JETON_EXTEND_COST ? <Text style={{ color: '#f87171', fontSize: 11, marginTop: 2 }}>{t('payInsufficientJetons')}</Text> : null}
-              </View>
-            </Pressable>
+            {[
+              { cost: JETON_EXTEND_SMALL_COST, seconds: JETON_EXTEND_SMALL_SECONDS },
+              { cost: JETON_EXTEND_COST, seconds: JETON_EXTEND_SECONDS },
+            ].map((opt) => {
+              const short = Math.max(0, opt.cost - payments.payments.jetonBalance);
+              return (
+                <Pressable
+                  key={opt.cost}
+                  onPress={() => spendJetons(opt.cost, opt.seconds)}
+                  disabled={short > 0}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    backgroundColor: '#141020',
+                    borderWidth: 1,
+                    borderColor: 'rgba(250,204,21,.35)',
+                    borderRadius: 16,
+                    padding: 14,
+                    opacity: short > 0 ? 0.5 : 1,
+                  }}
+                >
+                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(250,204,21,.15)', alignItems: 'center', justifyContent: 'center' }}>
+                    <Coins size={19} color="#facc15" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{t('payExtendWithJetons', { cost: opt.cost, minutes: opt.seconds / 60 })}</Text>
+                    {short > 0 ? <Text style={{ color: '#f87171', fontSize: 11, marginTop: 2 }}>{t('payJetonsShort', { count: short })}</Text> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
 
             <Pressable
-              onPress={() => runFakeAd('time')}
-              disabled={watchingAd !== null}
+              onPress={runFakeAd}
+              disabled={watchingAd}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#141020', borderWidth: 1, borderColor: 'rgba(255,255,255,.08)', borderRadius: 16, padding: 14 }}
             >
               <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(59,130,246,.15)', alignItems: 'center', justifyContent: 'center' }}>
-                {watchingAd === 'time' ? <ActivityIndicator size="small" color="#3b82f6" /> : <PlayCircle size={19} color="#3b82f6" />}
+                {watchingAd ? <ActivityIndicator size="small" color="#3b82f6" /> : <PlayCircle size={19} color="#3b82f6" />}
               </View>
-              <Text style={{ flex: 1, color: '#fff', fontWeight: '700', fontSize: 14 }}>{t('payExtendWithAd', { minutes: AD_EXTEND_SECONDS / 60 })}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{t('payWatchAdEarnJetons', { count: AD_REWARD_JETONS })}</Text>
+                {payments.payments.jetonBalance < JETON_EXTEND_SMALL_COST ? (
+                  <Text style={{ color: '#3b82f6', fontSize: 11, marginTop: 2 }}>
+                    {t('payAdsUntilExtension', {
+                      ads: Math.ceil((JETON_EXTEND_SMALL_COST - payments.payments.jetonBalance) / AD_REWARD_JETONS),
+                      minutes: JETON_EXTEND_SMALL_SECONDS / 60,
+                    })}
+                  </Text>
+                ) : null}
+              </View>
             </Pressable>
           </View>
         ) : null}

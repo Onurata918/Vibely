@@ -4,15 +4,27 @@ import {
   createInitialState,
   dailyLimit,
   isCallBlocked,
-  monthlyLimit,
   nextMidnight,
-  nextMonthStart,
+  nextWeekStart,
+  normalizeState,
   paymentsReducer,
   remainingDailySeconds,
+  weeklyLimit,
 } from '../engine';
-import { AD_REWARD_JETONS, GAME_COST_HIGH, GAME_COST_LOW, JETON_EXTEND_COST, JETON_EXTEND_SECONDS, MAX_ADS_PER_DAY } from '../types';
+import {
+  AD_REWARD_JETONS,
+  GAME_COST_HIGH,
+  GAME_COST_LOW,
+  INVITE_REWARD_JETONS,
+  JETON_EXTEND_COST,
+  JETON_EXTEND_SECONDS,
+  JETON_EXTEND_SMALL_COST,
+  JETON_EXTEND_SMALL_SECONDS,
+  WEEKLY_LIMIT_SECONDS,
+} from '../types';
 
-const T0 = new Date('2026-01-15T10:00:00Z').getTime();
+const T0 = new Date('2026-01-15T10:00:00Z').getTime(); // Perşembe
+const MONDAY = new Date('2026-01-12T10:00:00Z').getTime(); // Pazartesi
 
 describe('jeton package purchase', () => {
   it('adds the correct jeton amount for a valid package', () => {
@@ -47,14 +59,6 @@ describe('premium purchase', () => {
     expect(daysUntilExpiry).toBeCloseTo(90, 0);
   });
 
-  it('premium bypasses call-time tracking entirely', () => {
-    let state = createInitialState(T0);
-    state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
-    state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 10 * 60 * 60, now: T0 + 1000 }).state;
-    expect(state.dailyUsedSeconds).toBe(0);
-    expect(isCallBlocked(state)).toBe(false);
-  });
-
   it('premium automatically expires and reverts to free tier', () => {
     let state = createInitialState(T0);
     state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
@@ -65,7 +69,27 @@ describe('premium purchase', () => {
   });
 });
 
-describe('daily/monthly call-time limit', () => {
+describe('premium has no time limit', () => {
+  it('is never blocked, however long the calls run', () => {
+    let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
+    state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 40 * 60 * 60, now: T0 }).state;
+    expect(dailyLimit(state)).toBe(Number.POSITIVE_INFINITY);
+    expect(weeklyLimit(state)).toBe(Number.POSITIVE_INFINITY);
+    expect(isCallBlocked(state)).toBe(false);
+  });
+
+  it('falls back to the free limits once premium expires', () => {
+    let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
+    state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 3 * 60 * 60, now: T0 }).state;
+    const afterExpiry = paymentsReducer(state, { type: 'CHECK_RESETS', now: state.premiumExpiresAt! + 1000 }).state;
+    expect(afterExpiry.isPremium).toBe(false);
+    expect(weeklyLimit(afterExpiry)).toBe(WEEKLY_LIMIT_SECONDS);
+  });
+});
+
+describe('free-tier call-time limit (1h/day, 5h/week)', () => {
   it('is not blocked when under both limits', () => {
     let state = createInitialState(T0);
     state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 30 * 60, now: T0 }).state;
@@ -80,24 +104,24 @@ describe('daily/monthly call-time limit', () => {
     expect(dailyLimit(state)).toBe(60 * 60);
   });
 
-  it('blocks once the monthly 8-hour limit is reached even if daily is under', () => {
-    // 10 separate days of 50 minutes each: each day stays well under the 60-minute
-    // daily cap, but the monthly total (500 min = 30,000s) exceeds the 8h (28,800s) cap.
-    let state = createInitialState(T0);
-    for (let day = 0; day < 10; day++) {
-      const dayNow = T0 + day * 24 * 60 * 60 * 1000;
+  it('blocks once the weekly 5-hour limit is reached even if today is under', () => {
+    // Pazartesiden itibaren 6 gün × 50 dk: her gün 60 dk'lık günlük sınırın altında
+    // kalır ama haftalık toplam (300 dk) 5 saatlik tavana dayanır.
+    let state = createInitialState(MONDAY);
+    for (let day = 0; day < 6; day++) {
+      const dayNow = MONDAY + day * 24 * 60 * 60 * 1000;
       state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 50 * 60, now: dayNow }).state;
     }
-    expect(monthlyLimit(state)).toBe(8 * 60 * 60);
-    expect(state.monthlyUsedSeconds).toBe(10 * 50 * 60);
+    expect(weeklyLimit(state)).toBe(5 * 60 * 60);
+    expect(state.weeklyUsedSeconds).toBe(6 * 50 * 60);
     expect(state.dailyUsedSeconds).toBe(50 * 60);
     expect(state.dailyUsedSeconds).toBeLessThan(dailyLimit(state));
     expect(isCallBlocked(state)).toBe(true);
   });
 });
 
-describe('daily reset', () => {
-  it('resets daily usage after midnight but keeps monthly usage', () => {
+describe('resets', () => {
+  it('resets daily usage after midnight but keeps weekly usage', () => {
     let state = createInitialState(T0);
     state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 60 * 60, now: T0 }).state;
     expect(isCallBlocked(state)).toBe(true);
@@ -105,37 +129,58 @@ describe('daily reset', () => {
     const tomorrow = nextMidnight(T0) + 1000;
     const result = paymentsReducer(state, { type: 'CHECK_RESETS', now: tomorrow });
     expect(result.state.dailyUsedSeconds).toBe(0);
-    expect(result.state.monthlyUsedSeconds).toBe(60 * 60); // ay içindeki toplam korunur
+    expect(result.state.weeklyUsedSeconds).toBe(60 * 60); // hafta içindeki toplam korunur
     expect(isCallBlocked(result.state)).toBe(false);
   });
 
-  it('resets monthly usage and ad count at month start', () => {
+  it('resets weekly usage and the ad counters at the start of the week', () => {
     let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 45 * 60, now: T0 }).state;
     state = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 }).state;
-    const nextMonth = nextMonthStart(T0) + 1000;
-    const result = paymentsReducer(state, { type: 'CHECK_RESETS', now: nextMonth });
-    expect(result.state.monthlyUsedSeconds).toBe(0);
+    const nextWeek = nextWeekStart(T0) + 1000;
+    const result = paymentsReducer(state, { type: 'CHECK_RESETS', now: nextWeek });
+    expect(result.state.weeklyUsedSeconds).toBe(0);
     expect(result.state.adsWatchedToday).toBe(0);
+  });
+
+  it('the week always starts on a Monday', () => {
+    expect(new Date(nextWeekStart(T0)).getDay()).toBe(1);
+    expect(new Date(nextWeekStart(MONDAY)).getDay()).toBe(1);
+    // Pazartesi günü çağrıldığında bugüne değil, bir sonraki pazartesiye işaret eder.
+    expect(nextWeekStart(MONDAY)).toBeGreaterThan(MONDAY);
   });
 });
 
 describe('spending jetons for a time extension', () => {
-  it('extends both the daily and monthly allowance and deducts jetons', () => {
+  it('the small option adds 15 minutes for 10 jetons', () => {
     let state = createInitialState(T0);
     state = paymentsReducer(state, { type: 'BUY_JETON_PACKAGE', packageId: 'jeton_100' }).state;
     state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 60 * 60, now: T0 }).state;
     expect(isCallBlocked(state)).toBe(true);
 
-    const result = paymentsReducer(state, { type: 'SPEND_JETONS_FOR_TIME' });
+    const result = paymentsReducer(state, { type: 'SPEND_JETONS_FOR_TIME', cost: JETON_EXTEND_SMALL_COST, seconds: JETON_EXTEND_SMALL_SECONDS });
     expect(result.error).toBeUndefined();
+    expect(result.state.jetonBalance).toBe(100 - JETON_EXTEND_SMALL_COST);
+    expect(result.state.dailyBonusSeconds).toBe(JETON_EXTEND_SMALL_SECONDS);
+    expect(result.state.weeklyBonusSeconds).toBe(JETON_EXTEND_SMALL_SECONDS);
+    expect(isCallBlocked(result.state)).toBe(false);
+  });
+
+  it('the large option adds 30 minutes for 20 jetons', () => {
+    let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'BUY_JETON_PACKAGE', packageId: 'jeton_100' }).state;
+    const result = paymentsReducer(state, { type: 'SPEND_JETONS_FOR_TIME', cost: JETON_EXTEND_COST, seconds: JETON_EXTEND_SECONDS });
     expect(result.state.jetonBalance).toBe(100 - JETON_EXTEND_COST);
     expect(result.state.dailyBonusSeconds).toBe(JETON_EXTEND_SECONDS);
-    expect(isCallBlocked(result.state)).toBe(false);
+  });
+
+  it('both options cost the same per minute', () => {
+    expect(JETON_EXTEND_SMALL_COST / JETON_EXTEND_SMALL_SECONDS).toBeCloseTo(JETON_EXTEND_COST / JETON_EXTEND_SECONDS, 10);
   });
 
   it('rejects spending when the balance is insufficient', () => {
     const state = createInitialState(T0);
-    const result = paymentsReducer(state, { type: 'SPEND_JETONS_FOR_TIME' });
+    const result = paymentsReducer(state, { type: 'SPEND_JETONS_FOR_TIME', cost: JETON_EXTEND_SMALL_COST, seconds: JETON_EXTEND_SMALL_SECONDS });
     expect(result.error).toBe('insufficient-jetons');
     expect(result.state.jetonBalance).toBe(0);
   });
@@ -152,7 +197,7 @@ describe('spending jetons to start a game', () => {
 
   it('rejects when the balance is below the game cost', () => {
     let state = createInitialState(T0);
-    state = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 }).state; // +2 jetons
+    state = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 }).state;
     const result = paymentsReducer(state, { type: 'SPEND_JETONS_FOR_GAME', cost: GAME_COST_LOW });
     expect(result.error).toBe('insufficient-jetons');
     expect(result.state.jetonBalance).toBe(AD_REWARD_JETONS);
@@ -168,25 +213,80 @@ describe('spending jetons to start a game', () => {
 });
 
 describe('watching ads', () => {
-  it('grants jetons and enforces the daily ad cap', () => {
+  it('grants jetons with no daily cap', () => {
     let state = createInitialState(T0);
-    for (let i = 0; i < MAX_ADS_PER_DAY; i++) {
-      state = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 }).state;
+    for (let i = 0; i < 200; i++) {
+      const result = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 });
+      expect(result.error).toBeUndefined();
+      state = result.state;
     }
-    expect(state.jetonBalance).toBe(MAX_ADS_PER_DAY * AD_REWARD_JETONS);
-    const overCap = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 });
-    expect(overCap.error).toBe('daily-ad-limit');
-    expect(overCap.state.jetonBalance).toBe(state.jetonBalance);
+    expect(state.jetonBalance).toBe(200 * AD_REWARD_JETONS);
+    expect(state.adsWatchedToday).toBe(200);
   });
 
-  it('watching an ad for a time extension unblocks a capped call and shares the same daily cap', () => {
+  it('ads no longer extend call time directly — only jetons do', () => {
     let state = createInitialState(T0);
     state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 60 * 60, now: T0 }).state;
     expect(isCallBlocked(state)).toBe(true);
 
-    const result = paymentsReducer(state, { type: 'WATCH_AD_FOR_TIME_EXTENSION', now: T0 });
-    expect(result.error).toBeUndefined();
-    expect(isCallBlocked(result.state)).toBe(false);
-    expect(result.state.adsWatchedToday).toBe(1);
+    // Reklam süre vermez, sadece jeton verir.
+    for (let i = 0; i < JETON_EXTEND_SMALL_COST / AD_REWARD_JETONS; i++) {
+      state = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 }).state;
+    }
+    expect(state.dailyBonusSeconds).toBe(0);
+    expect(isCallBlocked(state)).toBe(true);
+
+    // Kazanılan jetonlar uzatmaya çevrilince engel kalkar.
+    expect(state.jetonBalance).toBe(JETON_EXTEND_SMALL_COST);
+    state = paymentsReducer(state, { type: 'SPEND_JETONS_FOR_TIME', cost: JETON_EXTEND_SMALL_COST, seconds: JETON_EXTEND_SMALL_SECONDS }).state;
+    expect(isCallBlocked(state)).toBe(false);
+  });
+});
+
+describe('invite reward', () => {
+  it('grants jetons and counts the invited friend', () => {
+    let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'CLAIM_INVITE_REWARD' }).state;
+    expect(state.jetonBalance).toBe(INVITE_REWARD_JETONS);
+    expect(state.invitesRewarded).toBe(1);
+  });
+
+  it('stacks across several invited friends', () => {
+    let state = createInitialState(T0);
+    for (let i = 0; i < 3; i++) state = paymentsReducer(state, { type: 'CLAIM_INVITE_REWARD' }).state;
+    expect(state.jetonBalance).toBe(3 * INVITE_REWARD_JETONS);
+    expect(state.invitesRewarded).toBe(3);
+  });
+
+  it('one invite is worth more than a jeton pack buys in ad views', () => {
+    expect(INVITE_REWARD_JETONS / AD_REWARD_JETONS).toBe(25);
+  });
+});
+
+describe('migrating a saved state from the old monthly model', () => {
+  it('fills in the weekly fields instead of producing NaN', () => {
+    const legacy = {
+      jetonBalance: 120,
+      isPremium: false,
+      premiumPlanId: null,
+      premiumExpiresAt: null,
+      dailyUsedSeconds: 600,
+      dailyBonusSeconds: 0,
+      dailyResetAt: nextMidnight(T0),
+      adsWatchedToday: 3,
+    } as unknown as Partial<import('../types').PaymentsState>;
+
+    const state = normalizeState(legacy, T0);
+    expect(state.jetonBalance).toBe(120);
+    expect(state.dailyUsedSeconds).toBe(600);
+    expect(state.weeklyUsedSeconds).toBe(0);
+    expect(state.weeklyBonusSeconds).toBe(0);
+    expect(state.invitesRewarded).toBe(0);
+    expect(Number.isFinite(state.weeklyResetAt)).toBe(true);
+    expect(isCallBlocked(state)).toBe(false);
+  });
+
+  it('returns a clean initial state when nothing is saved', () => {
+    expect(normalizeState(null, T0)).toEqual(createInitialState(T0));
   });
 });

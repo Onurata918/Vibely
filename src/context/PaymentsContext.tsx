@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react';
 
-import { createInitialState, paymentsReducer } from '@/lib/payments/engine';
+import { createInitialState, normalizeState, paymentsReducer } from '@/lib/payments/engine';
 import type { PremiumPlanId } from '@/lib/payments/plans';
 import type { PaymentsAction, PaymentsState } from '@/lib/payments/types';
 import { store } from '@/lib/storage';
@@ -12,8 +12,8 @@ type PaymentsContextValue = {
   buyJetonPackage: (packageId: string) => void;
   buyPremium: (planId: PremiumPlanId) => void;
   watchAdForJetons: () => void;
-  watchAdForTimeExtension: () => void;
-  spendJetonsForTime: () => void;
+  spendJetonsForTime: (cost: number, seconds: number) => void;
+  claimInviteReward: () => void;
   spendJetonsForGame: (cost: number) => void;
   cancelPremium: () => void;
 };
@@ -30,7 +30,7 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       const saved = await store.getPayments();
-      if (saved) rawDispatch({ type: 'REPLACE_STATE', state: paymentsReducer(saved, { type: 'CHECK_RESETS', now: Date.now() }).state });
+      if (saved) rawDispatch({ type: 'REPLACE_STATE', state: paymentsReducer(normalizeState(saved), { type: 'CHECK_RESETS', now: Date.now() }).state });
     })();
   }, []);
 
@@ -55,14 +55,14 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
   const buyJetonPackage = useCallback((packageId: string) => dispatchAndCheck({ type: 'BUY_JETON_PACKAGE', packageId }), [dispatchAndCheck]);
   const buyPremium = useCallback((planId: PremiumPlanId) => dispatchAndCheck({ type: 'BUY_PREMIUM', planId, now: Date.now() }), [dispatchAndCheck]);
   const watchAdForJetons = useCallback(() => dispatchAndCheck({ type: 'WATCH_AD_FOR_JETONS', now: Date.now() }), [dispatchAndCheck]);
-  const watchAdForTimeExtension = useCallback(() => dispatchAndCheck({ type: 'WATCH_AD_FOR_TIME_EXTENSION', now: Date.now() }), [dispatchAndCheck]);
-  const spendJetonsForTime = useCallback(() => dispatchAndCheck({ type: 'SPEND_JETONS_FOR_TIME' }), [dispatchAndCheck]);
+  const spendJetonsForTime = useCallback((cost: number, seconds: number) => dispatchAndCheck({ type: 'SPEND_JETONS_FOR_TIME', cost, seconds }), [dispatchAndCheck]);
+  const claimInviteReward = useCallback(() => dispatchAndCheck({ type: 'CLAIM_INVITE_REWARD' }), [dispatchAndCheck]);
   const spendJetonsForGame = useCallback((cost: number) => dispatchAndCheck({ type: 'SPEND_JETONS_FOR_GAME', cost }), [dispatchAndCheck]);
   const cancelPremium = useCallback(() => dispatchAndCheck({ type: 'CANCEL_PREMIUM' }), [dispatchAndCheck]);
 
   return (
     <PaymentsContext.Provider
-      value={{ payments, lastError, tickCallSeconds, buyJetonPackage, buyPremium, watchAdForJetons, watchAdForTimeExtension, spendJetonsForTime, spendJetonsForGame, cancelPremium }}
+      value={{ payments, lastError, tickCallSeconds, buyJetonPackage, buyPremium, watchAdForJetons, spendJetonsForTime, claimInviteReward, spendJetonsForGame, cancelPremium }}
     >
       {children}
     </PaymentsContext.Provider>

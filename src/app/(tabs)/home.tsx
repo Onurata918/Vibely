@@ -12,7 +12,7 @@ import { SheetActionRow, SheetParagraph, SheetTitle } from '@/components/ui/Shee
 import { useApp } from '@/context/AppContext';
 import { useLanguage, type Language } from '@/context/LanguageContext';
 import { usePayments } from '@/context/PaymentsContext';
-import { AD_REWARD_JETONS } from '@/lib/payments/types';
+import { AD_REWARD_JETONS, INVITE_REWARD_JETONS } from '@/lib/payments/types';
 import { localizeDataName } from '@/lib/i18n/itemNames.data';
 import { PEOPLE } from '@/lib/vibely-data';
 
@@ -129,7 +129,14 @@ export default function HomeScreen() {
       <AddFriendForm
         onSend={(v) => {
           toast(t('friendRequestSentToast', { name: v }));
+          // Mock: gercek surumde odul, davet linkiyle kaydolan arkadas Supabase'de
+          // dogrulandiktan sonra sunucudan verilir.
+          setTimeout(() => {
+            payments.claimInviteReward();
+            toast(t('payInviteRewardToast', { name: v, count: INVITE_REWARD_JETONS }));
+          }, 2600);
         }}
+        onShareLink={() => toast(t('payInviteLinkCopiedToast'))}
       />
     );
   };
@@ -346,7 +353,7 @@ function CreateRoomForm({ onCreate }: { onCreate: (name: string) => void }) {
   );
 }
 
-function AddFriendForm({ onSend }: { onSend: (v: string) => void }) {
+function AddFriendForm({ onSend, onShareLink }: { onSend: (v: string) => void; onShareLink: () => void }) {
   const { closeSheet } = useApp();
   const { t } = useLanguage();
   const [v, setV] = React.useState('');
@@ -354,6 +361,18 @@ function AddFriendForm({ onSend }: { onSend: (v: string) => void }) {
     <View>
       <SheetTitle>{t('addFriend')}</SheetTitle>
       <SheetParagraph>{t('findFriendSubtitle')}</SheetParagraph>
+
+      <View style={{ backgroundColor: 'rgba(250,204,21,.08)', borderWidth: 1, borderColor: 'rgba(250,204,21,.3)', borderRadius: 16, padding: 14, marginBottom: 16, gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+          <Coins size={17} color="#facc15" />
+          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14, flex: 1 }}>{t('payInviteRewardTitle', { count: INVITE_REWARD_JETONS })}</Text>
+        </View>
+        <Text style={{ color: '#a59fb8', fontSize: 12, lineHeight: 17 }}>{t('payInviteRewardSubtitle', { count: INVITE_REWARD_JETONS })}</Text>
+        <Pressable onPress={onShareLink} style={{ height: 42, borderRadius: 12, backgroundColor: 'rgba(250,204,21,.16)', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#facc15', fontWeight: '700', fontSize: 13 }}>{t('payInviteShareButton')}</Text>
+        </Pressable>
+      </View>
+
       <TextInput
         value={v}
         onChangeText={setV}

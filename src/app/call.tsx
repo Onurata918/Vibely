@@ -94,17 +94,19 @@ export default function CallScreen() {
   // Premium olmayan kullanicilar icin gunluk/aylik konusma suresini takip et;
   // sinira ulasinca zorunlu paywall'i ac.
   useEffect(() => {
-    if (!call || payments.payments.isPremium) return;
+    if (!call) return;
     const id = setInterval(() => {
       payments.tickCallSeconds(CALL_TICK_SECONDS);
     }, CALL_TICK_SECONDS * 1000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [call, payments.payments.isPremium]);
+  }, [call]);
 
+  // Sinira takilinca paywall acilir, sure uzatilinca kendiliginden kapanir.
+  const callBlocked = isCallBlocked(payments.payments);
   useEffect(() => {
-    if (isCallBlocked(payments.payments)) setLimitPaywallOpen(true);
-  }, [payments.payments]);
+    setLimitPaywallOpen(callBlocked);
+  }, [callBlocked]);
 
   if (!call) return null;
 
