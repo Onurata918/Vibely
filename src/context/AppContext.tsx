@@ -660,9 +660,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ---- baslangicta AsyncStorage'dan yukle ----
   useEffect(() => {
     (async () => {
-      const [a, h] = await Promise.all([store.getAccounts(), store.getHistory()]);
+      // Kayitli oturumu da geri yukle; yoksa kullanici her acilista yeniden giris yapar.
+      const [a, h, u] = await Promise.all([store.getAccounts(), store.getHistory(), store.getUser()]);
       setAccounts(a);
       setHistory(h);
+      if (u) setUser(u);
       setHydrated(true);
     })();
   }, []);

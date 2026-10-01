@@ -4,9 +4,11 @@ import { Animated, Easing, View } from 'react-native';
 
 import { GradientView } from '@/components/ui/GradientView';
 import { Logo } from '@/components/ui/Logo';
+import { useApp } from '@/context/AppContext';
 
 export default function SplashScreen() {
   const router = useRouter();
+  const { user } = useApp();
   const x = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -14,12 +16,13 @@ export default function SplashScreen() {
       Animated.timing(x, { toValue: 1, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
     );
     loop.start();
-    const t = setTimeout(() => router.replace('/login'), 1900);
+    // Oturum aciksa dogrudan ana ekrana; giris ekrani sadece oturum yokken gosterilir.
+    const t = setTimeout(() => router.replace(user ? '/(tabs)/home' : '/login'), 1900);
     return () => {
       loop.stop();
       clearTimeout(t);
     };
-  }, [router, x]);
+  }, [router, x, user]);
 
   return (
     <View className="flex-1 bg-vbg items-center justify-center">
