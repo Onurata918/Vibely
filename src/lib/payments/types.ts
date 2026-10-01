@@ -35,6 +35,8 @@ export type PaymentsState = {
   isPremium: boolean;
   premiumPlanId: PremiumPlanId | null;
   premiumExpiresAt: number | null;
+  /** Abonelik, kullanici iptal edene kadar her donem sonunda kendini yeniler. */
+  premiumAutoRenew: boolean;
 
   dailyUsedSeconds: number;
   dailyBonusSeconds: number;
@@ -62,7 +64,8 @@ export type PaymentsAction =
   | { type: 'SPEND_JETONS_FOR_GAME'; cost: number }
   | { type: 'CLAIM_INVITE_REWARD' }
   | { type: 'CLAIM_SIGNUP_BONUS' }
-  | { type: 'CANCEL_PREMIUM' };
+  | { type: 'CANCEL_PREMIUM' }
+  | { type: 'EXPIRE_PREMIUM_NOW' };
 
 export type PaymentsActionError = 'unknown-package' | 'unknown-plan' | 'insufficient-jetons' | 'daily-ad-limit';
 

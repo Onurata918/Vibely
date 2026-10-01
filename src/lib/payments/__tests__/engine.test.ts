@@ -62,13 +62,48 @@ describe('premium purchase', () => {
     expect(daysUntilExpiry).toBeCloseTo(90, 0);
   });
 
-  it('premium automatically expires and reverts to free tier', () => {
+  it('renews itself at the end of the period', () => {
     let state = createInitialState(T0);
     state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
-    const wellAfterExpiry = state.premiumExpiresAt! + 1000;
-    const result = paymentsReducer(state, { type: 'CHECK_RESETS', now: wellAfterExpiry });
-    expect(result.state.isPremium).toBe(false);
-    expect(result.state.premiumExpiresAt).toBeNull();
+    expect(state.premiumAutoRenew).toBe(true);
+    const firstExpiry = state.premiumExpiresAt!;
+
+    const result = paymentsReducer(state, { type: 'CHECK_RESETS', now: firstExpiry + 1000 });
+    expect(result.state.isPremium).toBe(true);
+    expect(result.state.premiumExpiresAt).toBeGreaterThan(firstExpiry);
+  });
+
+  it('catches up on several periods when the app was closed for months', () => {
+    let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
+    const muchLater = T0 + 200 * 24 * 60 * 60 * 1000;
+    const result = paymentsReducer(state, { type: 'CHECK_RESETS', now: muchLater });
+    expect(result.state.isPremium).toBe(true);
+    expect(result.state.premiumExpiresAt).toBeGreaterThan(muchLater);
+  });
+
+  it('cancelling keeps premium until the paid period runs out, then stops', () => {
+    let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
+    const expiry = state.premiumExpiresAt!;
+
+    state = paymentsReducer(state, { type: 'CANCEL_PREMIUM' }).state;
+    expect(state.premiumAutoRenew).toBe(false);
+    // İptal ettiği gün hâlâ Premium.
+    expect(state.isPremium).toBe(true);
+    expect(isCallBlocked(paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 6 * 60 * 60, now: T0 }).state)).toBe(false);
+
+    const after = paymentsReducer(state, { type: 'CHECK_RESETS', now: expiry + 1000 });
+    expect(after.state.isPremium).toBe(false);
+    expect(after.state.premiumExpiresAt).toBeNull();
+  });
+
+  it('the test-only action ends premium straight away', () => {
+    let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
+    state = paymentsReducer(state, { type: 'EXPIRE_PREMIUM_NOW' }).state;
+    expect(state.isPremium).toBe(false);
+    expect(state.premiumAutoRenew).toBe(false);
   });
 });
 
@@ -96,9 +131,10 @@ describe('premium call-time limit (15h/week, no daily cap)', () => {
     expect(weeklyLimit(premium)).toBe(3 * weeklyLimit(free));
   });
 
-  it('falls back to the free limits once premium expires', () => {
+  it('falls back to the free limits once a cancelled subscription runs out', () => {
     let state = createInitialState(T0);
     state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
+    state = paymentsReducer(state, { type: 'CANCEL_PREMIUM' }).state;
     const afterExpiry = paymentsReducer(state, { type: 'CHECK_RESETS', now: state.premiumExpiresAt! + 1000 }).state;
     expect(afterExpiry.isPremium).toBe(false);
     expect(weeklyLimit(afterExpiry)).toBe(WEEKLY_LIMIT_SECONDS);

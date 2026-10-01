@@ -33,3 +33,12 @@ export function shuffledIds<T extends { id: string }>(pool: readonly T[]): strin
   }
   return ids;
 }
+
+/** Abonelik yenileme/bitis tarihi gibi kisa tarihler icin. */
+export function formatDate(ms: number, language: 'en' | 'tr'): string {
+  return new Date(ms).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}

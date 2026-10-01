@@ -34,6 +34,7 @@ export function createInitialState(now: number = Date.now()): PaymentsState {
     isPremium: false,
     premiumPlanId: null,
     premiumExpiresAt: null,
+    premiumAutoRenew: false,
     dailyUsedSeconds: 0,
     dailyBonusSeconds: 0,
     dailyResetAt: nextMidnight(now),
@@ -70,9 +71,17 @@ function applyResets(state: PaymentsState, now: number): PaymentsState {
   if (now >= next.weeklyResetAt) {
     next = { ...next, weeklyUsedSeconds: 0, weeklyBonusSeconds: 0, weeklyResetAt: nextWeekStart(now) };
   }
-  // Premium suresi dolduysa otomatik olarak normal kullaniciya doner.
+  // Donem sonu: abonelik acik birakildiysa kendini yeniler, iptal edildiyse biter.
   if (next.isPremium && next.premiumExpiresAt !== null && now >= next.premiumExpiresAt) {
-    next = { ...next, isPremium: false, premiumPlanId: null, premiumExpiresAt: null };
+    const plan = PREMIUM_PLANS.find((p) => p.id === next.premiumPlanId);
+    if (next.premiumAutoRenew && plan) {
+      // Uygulama uzun sure acilmadiysa birden fazla donem gecmis olabilir.
+      let expiresAt = next.premiumExpiresAt;
+      while (expiresAt <= now) expiresAt += plan.months * PREMIUM_MS_PER_MONTH;
+      next = { ...next, premiumExpiresAt: expiresAt };
+    } else {
+      next = { ...next, isPremium: false, premiumPlanId: null, premiumExpiresAt: null, premiumAutoRenew: false };
+    }
   }
   return next;
 }
@@ -130,7 +139,7 @@ export function paymentsReducer(state: PaymentsState, action: PaymentsAction): P
       const plan = PREMIUM_PLANS.find((p) => p.id === action.planId);
       if (!plan) return { state, error: 'unknown-plan' };
       const expiresAt = action.now + plan.months * PREMIUM_MS_PER_MONTH;
-      return { state: { ...state, isPremium: true, premiumPlanId: plan.id, premiumExpiresAt: expiresAt } };
+      return { state: { ...state, isPremium: true, premiumPlanId: plan.id, premiumExpiresAt: expiresAt, premiumAutoRenew: true } };
     }
 
     case 'WATCH_AD_FOR_JETONS': {
@@ -168,7 +177,12 @@ export function paymentsReducer(state: PaymentsState, action: PaymentsAction): P
     }
 
     case 'CANCEL_PREMIUM':
-      return { state: { ...state, isPremium: false, premiumPlanId: null, premiumExpiresAt: null } };
+      // Magazalarda iptal, aboneligi hemen bitirmez: odenmis donem sonuna kadar surer.
+      return { state: { ...state, premiumAutoRenew: false } };
+
+    case 'EXPIRE_PREMIUM_NOW':
+      // Yalnizca test icin: Premium'u aninda bitirir.
+      return { state: { ...state, isPremium: false, premiumPlanId: null, premiumExpiresAt: null, premiumAutoRenew: false } };
 
     default:
       return { state };

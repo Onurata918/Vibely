@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SheetParagraph, SheetTitle } from '@/components/ui/Sheet';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { formatDate } from '@/lib/utils';
 import { usePayments } from '@/context/PaymentsContext';
 import { formatPrice, JETON_PACKAGES, packagePrice, PREMIUM_PLANS, planPrice, type PaymentsRegion, type PremiumPlanId } from '@/lib/payments/plans';
 import { AD_REWARD_JETONS, MAX_ADS_PER_DAY, JETON_EXTEND_COST, JETON_EXTEND_SECONDS, JETON_EXTEND_SMALL_COST, JETON_EXTEND_SMALL_SECONDS } from '@/lib/payments/types';
@@ -26,7 +28,7 @@ export function PaywallOverlay({
 }) {
   const insets = useSafeAreaInsets();
   const { t, language } = useLanguage();
-  const { toast } = useApp();
+  const { toast, openSheet } = useApp();
   const payments = usePayments();
   const region: PaymentsRegion = language === 'tr' ? 'TR' : 'UK';
 
@@ -34,6 +36,15 @@ export function PaywallOverlay({
   const [buyingPlan, setBuyingPlan] = useState<PremiumPlanId | null>(null);
 
   const fmt = (n: number) => formatPrice(n, region);
+
+  const showLegal = (kind: 'terms' | 'privacy') =>
+    openSheet(
+      kind,
+      <View>
+        <SheetTitle>{kind === 'terms' ? t('termsTitle') : t('privacyTitle')}</SheetTitle>
+        <SheetParagraph>{kind === 'terms' ? t('termsBody') : t('privacyBody')}</SheetParagraph>
+      </View>
+    );
 
   const runFakeAd = () => {
     if (payments.payments.adsWatchedToday >= MAX_ADS_PER_DAY) return toast(t('payDailyAdLimitReached'));
@@ -80,8 +91,24 @@ export function PaywallOverlay({
       {payments.payments.isPremium ? (
         <View style={{ backgroundColor: 'rgba(74,222,128,.12)', borderWidth: 1, borderColor: 'rgba(74,222,128,.4)', borderRadius: 14, padding: 14, alignItems: 'center' }}>
           <Text style={{ color: '#4ade80', fontWeight: '800', fontSize: 14 }}>✓ {t('payPremiumActiveLabel')}</Text>
-          <Pressable onPress={() => { payments.cancelPremium(); toast(t('payPremiumCancelledToast')); }} style={{ marginTop: 10 }}>
-            <Text style={{ color: '#f87171', fontWeight: '700', fontSize: 12.5, textDecorationLine: 'underline' }}>{t('payCancelPremium')}</Text>
+          {payments.payments.premiumExpiresAt ? (
+            <Text style={{ color: '#8e879f', fontSize: 12, marginTop: 6, textAlign: 'center' }}>
+              {t(payments.payments.premiumAutoRenew ? 'payRenewsOn' : 'payEndsOn', { date: formatDate(payments.payments.premiumExpiresAt, language) })}
+            </Text>
+          ) : null}
+          {payments.payments.premiumAutoRenew ? (
+            <Pressable
+              onPress={() => {
+                payments.cancelPremium();
+                toast(t('payCancelledToast', { date: formatDate(payments.payments.premiumExpiresAt ?? Date.now(), language) }));
+              }}
+              style={{ marginTop: 10 }}
+            >
+              <Text style={{ color: '#f87171', fontWeight: '700', fontSize: 12.5, textDecorationLine: 'underline' }}>{t('payCancelPremium')}</Text>
+            </Pressable>
+          ) : null}
+          <Pressable onPress={() => { payments.expirePremiumNow(); toast(t('payPremiumCancelledToast')); }} style={{ marginTop: 8 }}>
+            <Text style={{ color: '#4a4458', fontWeight: '600', fontSize: 11 }}>{t('payExpireNow')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -142,6 +169,12 @@ export function PaywallOverlay({
                 </Pressable>
               );
             })}
+          </View>
+
+          <Text style={{ fontSize: 10.5, lineHeight: 15, color: '#635c73' }}>{t('payAutoRenewNote')}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
+            <Text onPress={() => showLegal('terms')} style={{ fontSize: 11, color: '#8b5cf6', fontWeight: '600' }}>{t('payTermsLinks')}</Text>
+            <Text onPress={() => showLegal('privacy')} style={{ fontSize: 11, color: '#8b5cf6', fontWeight: '600' }}>{t('payPrivacyLink')}</Text>
           </View>
         </>
       )}

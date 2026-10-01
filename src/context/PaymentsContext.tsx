@@ -17,6 +17,7 @@ type PaymentsContextValue = {
   claimSignupBonus: () => void;
   spendJetonsForGame: (cost: number) => void;
   cancelPremium: () => void;
+  expirePremiumNow: () => void;
 };
 
 const PaymentsContext = createContext<PaymentsContextValue | null>(null);
@@ -61,10 +62,11 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
   const claimSignupBonus = useCallback(() => dispatchAndCheck({ type: 'CLAIM_SIGNUP_BONUS' }), [dispatchAndCheck]);
   const spendJetonsForGame = useCallback((cost: number) => dispatchAndCheck({ type: 'SPEND_JETONS_FOR_GAME', cost }), [dispatchAndCheck]);
   const cancelPremium = useCallback(() => dispatchAndCheck({ type: 'CANCEL_PREMIUM' }), [dispatchAndCheck]);
+  const expirePremiumNow = useCallback(() => dispatchAndCheck({ type: 'EXPIRE_PREMIUM_NOW' }), [dispatchAndCheck]);
 
   return (
     <PaymentsContext.Provider
-      value={{ payments, lastError, tickCallSeconds, buyJetonPackage, buyPremium, watchAdForJetons, spendJetonsForTime, claimInviteReward, claimSignupBonus, spendJetonsForGame, cancelPremium }}
+      value={{ payments, lastError, tickCallSeconds, buyJetonPackage, buyPremium, watchAdForJetons, spendJetonsForTime, claimInviteReward, claimSignupBonus, spendJetonsForGame, cancelPremium, expirePremiumNow }}
     >
       {children}
     </PaymentsContext.Provider>
