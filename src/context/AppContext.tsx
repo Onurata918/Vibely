@@ -192,6 +192,9 @@ type AppContextValue = {
   history: HistoryItem[];
   notif: boolean;
   toggleNotif: () => void;
+  /** Arkadaslarim uygulamaya girdigimi gorsun mu? */
+  onlineVisible: boolean;
+  toggleOnlineVisible: () => void;
 
   // arama / cagri
   pending: CallTarget | null;
@@ -505,6 +508,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [notif, setNotif] = useState(true);
+  const [onlineVisible, setOnlineVisible] = useState(true);
 
   const [query, setQuery] = useState('');
   const [fquery, setFquery] = useState('');
@@ -662,10 +666,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       // Kayitli oturumu da geri yukle; yoksa kullanici her acilista yeniden giris yapar.
-      const [a, h, u] = await Promise.all([store.getAccounts(), store.getHistory(), store.getUser()]);
+      const [a, h, u, ov] = await Promise.all([store.getAccounts(), store.getHistory(), store.getUser(), store.getOnlineVisible()]);
       setAccounts(a);
       setHistory(h);
       if (u) setUser(u);
+      setOnlineVisible(ov);
       setHydrated(true);
     })();
   }, []);
@@ -802,6 +807,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
     [toast, t]
   );
+
+  const toggleOnlineVisible = useCallback(() => {
+    setOnlineVisible((v) => {
+      const next = !v;
+      store.setOnlineVisible(next);
+      toast(next ? t('onlineVisibleOnToast') : t('onlineVisibleOffToast'));
+      return next;
+    });
+  }, [toast, t]);
 
   const toggleNotif = useCallback(() => {
     setNotif((v) => {
@@ -2525,6 +2539,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     history,
     notif,
     toggleNotif,
+    onlineVisible,
+    toggleOnlineVisible,
 
     pending,
     startDial,

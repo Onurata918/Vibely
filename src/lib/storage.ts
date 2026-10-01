@@ -10,6 +10,7 @@ const KEYS = {
   history: 'vibely_history',
   okey101Sound: 'vibely_okey101_sound',
   payments: 'vibely_payments',
+  onlineVisible: 'vibely_online_visible',
 } as const;
 
 async function readJSON<T>(key: string, fallback: T): Promise<T> {
@@ -48,4 +49,7 @@ export const store = {
 
   getPayments: () => readJSON<PaymentsState | null>(KEYS.payments, null),
   setPayments: (v: PaymentsState) => writeJSON(KEYS.payments, v),
+
+  getOnlineVisible: () => readJSON<boolean>(KEYS.onlineVisible, true),
+  setOnlineVisible: (v: boolean) => writeJSON(KEYS.onlineVisible, v),
 };

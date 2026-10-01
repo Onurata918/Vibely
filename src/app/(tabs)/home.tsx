@@ -116,6 +116,7 @@ export default function HomeScreen() {
       <View>
         <SheetTitle>{t('notifications')}</SheetTitle>
         <View style={{ marginTop: -4, marginBottom: 6 }}>
+          <SheetActionRow label="Efe" sub={t('notifCameOnline')} avatarPerson={PEOPLE.find((p) => p.name === 'Efe')} trailing="1 dk" />
           <SheetActionRow label="Zeynep" sub={t('notifInvited')} avatarPerson={PEOPLE.find((p) => p.name === 'Zeynep')} trailing="2 dk" />
           <SheetActionRow label="Mert" sub={t('notifFriendRequest')} avatarPerson={PEOPLE.find((p) => p.name === 'Mert')} trailing="18 dk" />
           <SheetActionRow label="İrem" sub={t('notifLive')} avatarPerson={PEOPLE.find((p) => p.name === 'İrem')} trailing="1 sa" />

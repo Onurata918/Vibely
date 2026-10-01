@@ -1,5 +1,10 @@
 export const common = {
   en: {
+    onlineVisibleLabel: 'Let friends see when I come online',
+    onlineVisibleSub: 'Friends get a notification when you open Vibely. Turn this off to come online quietly.',
+    onlineVisibleOnToast: 'Friends will see when you come online',
+    onlineVisibleOffToast: 'You now come online quietly',
+    notifCameOnline: 'came online',
     close: 'Close',
     cancel: 'Cancel',
     send: 'Send',
@@ -51,6 +56,11 @@ export const common = {
     seedMsg3: 'How is everyone? 😄',
   },
   tr: {
+    onlineVisibleLabel: 'Çevrimiçi olduğumu arkadaşlarım görsün',
+    onlineVisibleSub: "Vibely'ı açtığında arkadaşlarına bildirim gider. Sessizce girmek istersen kapat.",
+    onlineVisibleOnToast: 'Arkadaşların çevrimiçi olduğunu görecek',
+    onlineVisibleOffToast: 'Artık sessizce çevrimiçi oluyorsun',
+    notifCameOnline: 'çevrimiçi oldu',
     close: 'Kapat',
     cancel: 'Vazgeç',
     send: 'Gönder',

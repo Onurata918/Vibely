@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ChevronRight, LogOut, Mail, Shield, User as UserIcon } from 'lucide-react-native';
+import { ChevronRight, Eye, LogOut, Mail, Shield, User as UserIcon } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,7 +13,7 @@ import { PEOPLE, ROOMS } from '@/lib/vibely-data';
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, history, notif, toggleNotif, openSheet, closeSheet, updateProfile, logout, toast } = useApp();
+  const { user, history, notif, toggleNotif, onlineVisible, toggleOnlineVisible, openSheet, closeSheet, updateProfile, logout, toast } = useApp();
   const { t } = useLanguage();
 
   const me = {
@@ -80,6 +80,12 @@ export default function ProfileScreen() {
 
         <GroupLabel>{t('preferences')}</GroupLabel>
         <SettingsRow icon={Mail} label={t('notificationsLabel')} trailing={<Switch value={notif} onValueChange={toggleNotif} trackColor={{ true: '#8b5cf6' }} />} />
+        <SettingsRow
+          icon={Eye}
+          label={t('onlineVisibleLabel')}
+          sub={t('onlineVisibleSub')}
+          trailing={<Switch value={onlineVisible} onValueChange={toggleOnlineVisible} trackColor={{ true: '#8b5cf6' }} />}
+        />
         <SettingsRow icon={Shield} label={t('privacyAndSecurity')} onPress={privacyInfo} chevron />
 
         <GroupLabel>{t('session')}</GroupLabel>
@@ -110,6 +116,7 @@ function GroupLabel({ children }: { children: string }) {
 function SettingsRow({
   icon: Icon,
   label,
+  sub,
   onPress,
   chevron,
   danger,
@@ -117,6 +124,7 @@ function SettingsRow({
 }: {
   icon: typeof UserIcon;
   label: string;
+  sub?: string;
   onPress?: () => void;
   chevron?: boolean;
   danger?: boolean;
@@ -127,9 +135,12 @@ function SettingsRow({
       <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: '#1b1629', alignItems: 'center', justifyContent: 'center' }}>
         <Icon size={17} color={danger ? '#f87171' : '#8b5cf6'} />
       </View>
-      <Text style={{ flex: 1, fontSize: 14.5, color: danger ? '#f87171' : '#fff' }} numberOfLines={1}>
-        {label}
-      </Text>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14.5, color: danger ? '#f87171' : '#fff' }} numberOfLines={1}>
+          {label}
+        </Text>
+        {sub ? <Text style={{ fontSize: 11.5, color: '#8e879f', marginTop: 2, lineHeight: 16 }}>{sub}</Text> : null}
+      </View>
       {trailing}
       {chevron ? <ChevronRight size={17} color="#635c73" /> : null}
     </Pressable>
