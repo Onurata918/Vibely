@@ -40,8 +40,13 @@ export default function LoginScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 6, paddingBottom: insets.bottom + 24, paddingHorizontal: 28, justifyContent: 'center' }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ marginBottom: 44 }}>
+        <View style={{ marginBottom: 28 }}>
           <Logo size="lg" tagline />
+        </View>
+
+        <View style={{ alignItems: 'center', marginBottom: 26, gap: 6 }}>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: '#fff', letterSpacing: -0.3 }}>{t('authHeadline')}</Text>
+          <Text style={{ fontSize: 13, color: '#8e879f', textAlign: 'center' }}>{t('authHeadlineSub')}</Text>
         </View>
 
         <View style={{ gap: 11 }}>
