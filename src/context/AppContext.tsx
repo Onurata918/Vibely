@@ -177,6 +177,7 @@ type AppContextValue = {
     agreed: boolean;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
   socialLogin: (provider: 'Google' | 'Apple') => void;
+  emailCodeLogin: (email: string) => void;
   logout: () => void;
   updateProfile: (name: string, username: string) => void;
 
@@ -764,6 +765,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       toast(t('loggedInWithToast', { provider }));
     },
     [toast, t, language]
+  );
+
+  const emailCodeLogin = useCallback(
+    (email: string) => {
+      // Mock: gercek surumde Supabase e-postaya tek kullanimlik kod gonderir, sifre hic olmaz.
+      const existing = accounts.find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
+      const handle = email.trim().split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || 'vibely_user';
+      const u: CurrentUser = existing
+        ? { username: existing.username, name: existing.name, email: existing.email }
+        : { username: handle, name: handle, email: email.trim() };
+      setUser(u);
+      store.setUser(u);
+    },
+    [accounts]
   );
 
   const logout = useCallback(() => {
@@ -2491,6 +2506,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     socialLogin,
+    emailCodeLogin,
     logout,
     updateProfile,
 
