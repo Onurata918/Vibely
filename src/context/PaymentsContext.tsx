@@ -14,6 +14,7 @@ type PaymentsContextValue = {
   watchAdForJetons: () => void;
   spendJetonsForTime: (cost: number, seconds: number) => void;
   claimInviteReward: () => void;
+  claimSignupBonus: () => void;
   spendJetonsForGame: (cost: number) => void;
   cancelPremium: () => void;
 };
@@ -57,12 +58,13 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
   const watchAdForJetons = useCallback(() => dispatchAndCheck({ type: 'WATCH_AD_FOR_JETONS', now: Date.now() }), [dispatchAndCheck]);
   const spendJetonsForTime = useCallback((cost: number, seconds: number) => dispatchAndCheck({ type: 'SPEND_JETONS_FOR_TIME', cost, seconds }), [dispatchAndCheck]);
   const claimInviteReward = useCallback(() => dispatchAndCheck({ type: 'CLAIM_INVITE_REWARD' }), [dispatchAndCheck]);
+  const claimSignupBonus = useCallback(() => dispatchAndCheck({ type: 'CLAIM_SIGNUP_BONUS' }), [dispatchAndCheck]);
   const spendJetonsForGame = useCallback((cost: number) => dispatchAndCheck({ type: 'SPEND_JETONS_FOR_GAME', cost }), [dispatchAndCheck]);
   const cancelPremium = useCallback(() => dispatchAndCheck({ type: 'CANCEL_PREMIUM' }), [dispatchAndCheck]);
 
   return (
     <PaymentsContext.Provider
-      value={{ payments, lastError, tickCallSeconds, buyJetonPackage, buyPremium, watchAdForJetons, spendJetonsForTime, claimInviteReward, spendJetonsForGame, cancelPremium }}
+      value={{ payments, lastError, tickCallSeconds, buyJetonPackage, buyPremium, watchAdForJetons, spendJetonsForTime, claimInviteReward, claimSignupBonus, spendJetonsForGame, cancelPremium }}
     >
       {children}
     </PaymentsContext.Provider>

@@ -3,9 +3,8 @@ import type { PremiumPlanId } from './plans';
 // Ucretsiz kullanici: gunde 1 saat, haftada 5 saat.
 export const DAILY_LIMIT_SECONDS = 60 * 60; // 1 saat
 export const WEEKLY_LIMIT_SECONDS = 5 * 60 * 60; // 5 saat
-// Premium'da sure siniri yok. Ileride adil kullanim tavani getirmek istersek
-// burasi sonlu bir sayiya cekilir; motorun geri kalani ayni kalir.
-export const PREMIUM_WEEKLY_LIMIT_SECONDS = Number.POSITIVE_INFINITY;
+// Premium: gunluk sinir yok, haftada 15 saat.
+export const PREMIUM_WEEKLY_LIMIT_SECONDS = 15 * 60 * 60;
 
 // Sure uzatma secenekleri (paywall'da iki kademe gosterilir).
 export const JETON_EXTEND_SMALL_COST = 10;
@@ -23,6 +22,9 @@ export const MAX_ADS_PER_DAY = Number.POSITIVE_INFINITY;
 
 // Davet linkiyle gelen arkadas uygulamaya giris yapinca davet edene verilir.
 export const INVITE_REWARD_JETONS = 50;
+
+// Hesabini ilk kez acan kullaniciya bir kerelik verilir.
+export const SIGNUP_BONUS_JETONS = 200;
 
 export const PREMIUM_MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
 
@@ -43,6 +45,8 @@ export type PaymentsState = {
   adsWatchedToday: number;
   /** Davet linkiyle katilip odul kazandirmis arkadas sayisi. */
   invitesRewarded: number;
+  /** Hos geldin odulu verildi mi? Bir kereliktir. */
+  signupBonusClaimed: boolean;
 };
 
 export type PaymentsAction =
@@ -55,6 +59,7 @@ export type PaymentsAction =
   | { type: 'SPEND_JETONS_FOR_TIME'; cost: number; seconds: number }
   | { type: 'SPEND_JETONS_FOR_GAME'; cost: number }
   | { type: 'CLAIM_INVITE_REWARD' }
+  | { type: 'CLAIM_SIGNUP_BONUS' }
   | { type: 'CANCEL_PREMIUM' };
 
 export type PaymentsActionError = 'unknown-package' | 'unknown-plan' | 'insufficient-jetons' | 'daily-ad-limit';

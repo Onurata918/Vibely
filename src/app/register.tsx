@@ -10,11 +10,14 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SheetParagraph, SheetTitle } from '@/components/ui/Sheet';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePayments } from '@/context/PaymentsContext';
+import { SIGNUP_BONUS_JETONS } from '@/lib/payments/types';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { register, openSheet } = useApp();
+  const { register, openSheet, toast } = useApp();
+  const payments = usePayments();
   const { t, language } = useLanguage();
 
   const [username, setUsername] = useState('');
@@ -32,6 +35,10 @@ export default function RegisterScreen() {
     const res = await register({ username, displayName, email, password, confirm, agreed });
     setLoading(false);
     if (!res.ok) return setError(res.error);
+    if (!payments.payments.signupBonusClaimed) {
+      payments.claimSignupBonus();
+      setTimeout(() => toast(t('paySignupBonusToast', { count: SIGNUP_BONUS_JETONS })), 700);
+    }
     router.replace('/(tabs)/home');
   };
 

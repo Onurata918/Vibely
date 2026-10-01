@@ -48,6 +48,7 @@ import {
 import { buildDeck, cardScoreValue, isPlayable, shuffle, stepPlayerIndex, type UnoCard, type UnoColor } from '@/lib/uno-data';
 import { SPY_LOCATIONS, type SpyLocation } from '@/lib/spy-data';
 import { SPY_LOCATIONS_EN } from '@/lib/spy-data.en';
+import { ROOM_MAX_PARTICIPANTS } from '@/lib/rooms';
 import { DARE_CHALLENGES, TD_QUESTIONS_PER_PLAYER, TRUTH_QUESTIONS } from '@/lib/truth-or-dare-data';
 import { callDurationLabel, isMail, pad, person, shuffledIds } from '@/lib/utils';
 import {
@@ -1028,7 +1029,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addToRoom = useCallback(
     (p: Person) => {
       const c = callRef.current;
-      if (!c || c.parts.some((x) => x.id === p.id)) return;
+      if (!c || c.parts.some((x) => x.id === p.id)) return false;
+      // parts listesi beni icermez, o yuzden +1.
+      if (c.parts.length + 1 >= ROOM_MAX_PARTICIPANTS) return false;
       setCall((cc) => {
         if (!cc) return cc;
         const part: CallParticipant = {
@@ -1043,13 +1046,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return { ...cc, parts: [...cc.parts, part] };
       });
       sysMsg(t('joinedRoomSysMsg', { name: p.name }));
+      return true;
     },
     [sysMsg, t]
   );
 
   const inviteToRoom = useCallback(
     (p: Person) => {
-      addToRoom(p);
+      if (!addToRoom(p)) return toast(t('roomFullToast', { max: ROOM_MAX_PARTICIPANTS }));
       toast(t('invitedToRoomToast', { name: p.name }));
     },
     [addToRoom, toast, t]
@@ -1063,7 +1067,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const c = callRef.current;
       if (!c) return;
       const out = [...PEOPLE, ...GUESTS].filter((p) => !c.parts.some((x) => x.id === p.id));
-      if (out.length) {
+      if (out.length && c.parts.length + 1 < ROOM_MAX_PARTICIPANTS) {
         const p = out[Math.floor(Math.random() * out.length)] as Person;
         if (lockedRef.current) {
           if (!sheetRef.current && !knockRequestRef.current) {
@@ -1079,9 +1083,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [addToRoom, toast, t]);
 
   const acceptKnock = useCallback(() => {
-    if (knockRequest) addToRoom(knockRequest);
+    if (knockRequest && !addToRoom(knockRequest)) toast(t('roomFullToast', { max: ROOM_MAX_PARTICIPANTS }));
     setKnockRequest(null);
-  }, [knockRequest, addToRoom]);
+  }, [knockRequest, addToRoom, toast, t]);
 
   const rejectKnock = useCallback(() => {
     if (knockRequest) {

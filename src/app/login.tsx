@@ -8,6 +8,8 @@ import { Logo } from '@/components/ui/Logo';
 import { SheetParagraph, SheetTitle } from '@/components/ui/Sheet';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePayments } from '@/context/PaymentsContext';
+import { SIGNUP_BONUS_JETONS } from '@/lib/payments/types';
 
 /**
  * Tek ekranda giris ve kayit. "Continue with ..." kaliblarinin hepsi hem yeni
@@ -16,12 +18,21 @@ import { useLanguage } from '@/context/LanguageContext';
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { socialLogin, openSheet } = useApp();
+  const { socialLogin, openSheet, toast } = useApp();
+  const payments = usePayments();
   const { t, language } = useLanguage();
 
   const social = (provider: 'Apple' | 'Google') => {
     socialLogin(provider);
+    grantSignupBonus();
     router.replace('/(tabs)/home');
+  };
+
+  // Hos geldin odulu bir kerelik; motor tekrar cagrilmasini zaten yok sayar.
+  const grantSignupBonus = () => {
+    if (payments.payments.signupBonusClaimed) return;
+    payments.claimSignupBonus();
+    setTimeout(() => toast(t('paySignupBonusToast', { count: SIGNUP_BONUS_JETONS })), 700);
   };
 
   const showInfo = (kind: 'terms' | 'privacy') => {

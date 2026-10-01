@@ -1,5 +1,6 @@
 export const callChrome = {
   en: {
+    roomFullToast: 'Room is full — {max} people max',
     effects: 'Effects',
     games: 'Games',
     inviteAction: 'Invite',
@@ -50,6 +51,7 @@ export const callChrome = {
     messagePlaceholder: 'Send a message...',
   },
   tr: {
+    roomFullToast: 'Oda dolu — en fazla {max} kişi',
     effects: 'Efektler',
     games: 'Oyunlar',
     inviteAction: 'Davet Et',

@@ -8,6 +8,8 @@ import { Field } from '@/components/ui/Field';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePayments } from '@/context/PaymentsContext';
+import { SIGNUP_BONUS_JETONS } from '@/lib/payments/types';
 import { isMail } from '@/lib/utils';
 
 /**
@@ -19,6 +21,7 @@ export default function EmailSignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { emailCodeLogin, toast } = useApp();
+  const payments = usePayments();
   const { t } = useLanguage();
 
   const [step, setStep] = useState<'email' | 'code'>('email');
@@ -36,6 +39,10 @@ export default function EmailSignInScreen() {
   const verify = () => {
     if (!/^\d{6}$/.test(code)) return setError(t('authCodeInvalid'));
     emailCodeLogin(email);
+    if (!payments.payments.signupBonusClaimed) {
+      payments.claimSignupBonus();
+      setTimeout(() => toast(t('paySignupBonusToast', { count: SIGNUP_BONUS_JETONS })), 700);
+    }
     router.replace('/(tabs)/home');
   };
 

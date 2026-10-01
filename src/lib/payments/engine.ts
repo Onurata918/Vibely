@@ -3,6 +3,7 @@ import {
   AD_REWARD_JETONS,
   DAILY_LIMIT_SECONDS,
   INVITE_REWARD_JETONS,
+  SIGNUP_BONUS_JETONS,
   MAX_ADS_PER_DAY,
   PREMIUM_MS_PER_MONTH,
   PREMIUM_WEEKLY_LIMIT_SECONDS,
@@ -41,6 +42,7 @@ export function createInitialState(now: number = Date.now()): PaymentsState {
     weeklyResetAt: nextWeekStart(now),
     adsWatchedToday: 0,
     invitesRewarded: 0,
+    signupBonusClaimed: false,
   };
 }
 
@@ -148,6 +150,11 @@ export function paymentsReducer(state: PaymentsState, action: PaymentsAction): P
         },
       };
     }
+
+    case 'CLAIM_SIGNUP_BONUS':
+      // Bir kereliktir; tekrar cagrilmasi bakiyeyi degistirmez.
+      if (state.signupBonusClaimed) return { state };
+      return { state: { ...state, jetonBalance: state.jetonBalance + SIGNUP_BONUS_JETONS, signupBonusClaimed: true } };
 
     case 'CLAIM_INVITE_REWARD':
       // Gercek surumde bu, davet linkiyle kaydolan arkadas dogrulandiktan sonra sunucudan tetiklenir.

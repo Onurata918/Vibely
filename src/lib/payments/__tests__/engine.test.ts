@@ -16,6 +16,8 @@ import {
   GAME_COST_HIGH,
   GAME_COST_LOW,
   INVITE_REWARD_JETONS,
+  PREMIUM_WEEKLY_LIMIT_SECONDS,
+  SIGNUP_BONUS_JETONS,
   JETON_EXTEND_COST,
   JETON_EXTEND_SECONDS,
   JETON_EXTEND_SMALL_COST,
@@ -69,20 +71,33 @@ describe('premium purchase', () => {
   });
 });
 
-describe('premium has no time limit', () => {
-  it('is never blocked, however long the calls run', () => {
+describe('premium call-time limit (15h/week, no daily cap)', () => {
+  it('has no daily cap: 10 straight hours in one day is still allowed', () => {
     let state = createInitialState(T0);
     state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
-    state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 40 * 60 * 60, now: T0 }).state;
+    state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 10 * 60 * 60, now: T0 }).state;
     expect(dailyLimit(state)).toBe(Number.POSITIVE_INFINITY);
-    expect(weeklyLimit(state)).toBe(Number.POSITIVE_INFINITY);
     expect(isCallBlocked(state)).toBe(false);
+  });
+
+  it('blocks once the 15-hour weekly allowance is used up', () => {
+    let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
+    expect(weeklyLimit(state)).toBe(PREMIUM_WEEKLY_LIMIT_SECONDS);
+    state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 15 * 60 * 60, now: T0 }).state;
+    expect(isCallBlocked(state)).toBe(true);
+  });
+
+  it('premium gets three times the free weekly allowance', () => {
+    const free = createInitialState(T0);
+    const premium = paymentsReducer(free, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
+    expect(weeklyLimit(free)).toBe(WEEKLY_LIMIT_SECONDS);
+    expect(weeklyLimit(premium)).toBe(3 * weeklyLimit(free));
   });
 
   it('falls back to the free limits once premium expires', () => {
     let state = createInitialState(T0);
     state = paymentsReducer(state, { type: 'BUY_PREMIUM', planId: 'monthly', now: T0 }).state;
-    state = paymentsReducer(state, { type: 'TICK_CALL_SECONDS', seconds: 3 * 60 * 60, now: T0 }).state;
     const afterExpiry = paymentsReducer(state, { type: 'CHECK_RESETS', now: state.premiumExpiresAt! + 1000 }).state;
     expect(afterExpiry.isPremium).toBe(false);
     expect(weeklyLimit(afterExpiry)).toBe(WEEKLY_LIMIT_SECONDS);
@@ -240,6 +255,27 @@ describe('watching ads', () => {
     expect(state.jetonBalance).toBe(JETON_EXTEND_SMALL_COST);
     state = paymentsReducer(state, { type: 'SPEND_JETONS_FOR_TIME', cost: JETON_EXTEND_SMALL_COST, seconds: JETON_EXTEND_SMALL_SECONDS }).state;
     expect(isCallBlocked(state)).toBe(false);
+  });
+});
+
+describe('signup bonus', () => {
+  it('grants the bonus once', () => {
+    let state = createInitialState(T0);
+    state = paymentsReducer(state, { type: 'CLAIM_SIGNUP_BONUS' }).state;
+    expect(state.jetonBalance).toBe(SIGNUP_BONUS_JETONS);
+    expect(state.signupBonusClaimed).toBe(true);
+  });
+
+  it('never pays twice, however many times it is called', () => {
+    let state = createInitialState(T0);
+    for (let i = 0; i < 5; i++) state = paymentsReducer(state, { type: 'CLAIM_SIGNUP_BONUS' }).state;
+    expect(state.jetonBalance).toBe(SIGNUP_BONUS_JETONS);
+  });
+
+  it('covers a good first session: several games plus a time extension', () => {
+    const state = paymentsReducer(createInitialState(T0), { type: 'CLAIM_SIGNUP_BONUS' }).state;
+    expect(state.jetonBalance).toBeGreaterThanOrEqual(GAME_COST_HIGH * 10);
+    expect(state.jetonBalance).toBeGreaterThanOrEqual(JETON_EXTEND_COST);
   });
 });
 
