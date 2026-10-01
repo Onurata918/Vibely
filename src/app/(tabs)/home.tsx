@@ -12,7 +12,7 @@ import { SheetActionRow, SheetParagraph, SheetTitle } from '@/components/ui/Shee
 import { useApp } from '@/context/AppContext';
 import { useLanguage, type Language } from '@/context/LanguageContext';
 import { usePayments } from '@/context/PaymentsContext';
-import { AD_REWARD_JETONS, INVITE_REWARD_JETONS } from '@/lib/payments/types';
+import { AD_REWARD_JETONS, INVITE_REWARD_JETONS, MAX_ADS_PER_DAY } from '@/lib/payments/types';
 import { localizeDataName } from '@/lib/i18n/itemNames.data';
 import { PEOPLE } from '@/lib/vibely-data';
 
@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const [watchingAd, setWatchingAd] = React.useState(false);
 
   const watchAdForJetons = () => {
+    if (payments.payments.adsWatchedToday >= MAX_ADS_PER_DAY) return toast(t('payDailyAdLimitReached'));
     setWatchingAd(true);
     setTimeout(() => {
       setWatchingAd(false);

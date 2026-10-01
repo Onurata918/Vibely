@@ -22,6 +22,7 @@ import {
   JETON_EXTEND_SECONDS,
   JETON_EXTEND_SMALL_COST,
   JETON_EXTEND_SMALL_SECONDS,
+  MAX_ADS_PER_DAY,
   WEEKLY_LIMIT_SECONDS,
 } from '../types';
 
@@ -228,15 +229,34 @@ describe('spending jetons to start a game', () => {
 });
 
 describe('watching ads', () => {
-  it('grants jetons with no daily cap', () => {
+  it('grants jetons up to the daily cap, then refuses', () => {
     let state = createInitialState(T0);
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < MAX_ADS_PER_DAY; i++) {
       const result = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 });
       expect(result.error).toBeUndefined();
       state = result.state;
     }
-    expect(state.jetonBalance).toBe(200 * AD_REWARD_JETONS);
-    expect(state.adsWatchedToday).toBe(200);
+    expect(state.jetonBalance).toBe(MAX_ADS_PER_DAY * AD_REWARD_JETONS);
+
+    const overCap = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 });
+    expect(overCap.error).toBe('daily-ad-limit');
+    expect(overCap.state.jetonBalance).toBe(state.jetonBalance);
+  });
+
+  it('the cap resets the next day', () => {
+    let state = createInitialState(T0);
+    for (let i = 0; i < MAX_ADS_PER_DAY; i++) state = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: T0 }).state;
+    const tomorrow = nextMidnight(T0) + 1000;
+    const result = paymentsReducer(state, { type: 'WATCH_AD_FOR_JETONS', now: tomorrow });
+    expect(result.error).toBeUndefined();
+    expect(result.state.adsWatchedToday).toBe(1);
+  });
+
+  it("a day of ads stays below premium's weekly allowance", () => {
+    // Gunluk tavan dolduğunda kazanilan sure, Premium'u anlamsiz kilmamali.
+    const jetonsPerDay = MAX_ADS_PER_DAY * AD_REWARD_JETONS;
+    const secondsPerDay = (jetonsPerDay / JETON_EXTEND_SMALL_COST) * JETON_EXTEND_SMALL_SECONDS;
+    expect(secondsPerDay * 7 + WEEKLY_LIMIT_SECONDS).toBeLessThan(PREMIUM_WEEKLY_LIMIT_SECONDS * 1.5);
   });
 
   it('ads no longer extend call time directly — only jetons do', () => {

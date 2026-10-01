@@ -7,7 +7,7 @@ import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePayments } from '@/context/PaymentsContext';
 import { formatPrice, JETON_PACKAGES, packagePrice, PREMIUM_PLANS, planPrice, type PaymentsRegion, type PremiumPlanId } from '@/lib/payments/plans';
-import { AD_REWARD_JETONS, JETON_EXTEND_COST, JETON_EXTEND_SECONDS, JETON_EXTEND_SMALL_COST, JETON_EXTEND_SMALL_SECONDS } from '@/lib/payments/types';
+import { AD_REWARD_JETONS, MAX_ADS_PER_DAY, JETON_EXTEND_COST, JETON_EXTEND_SECONDS, JETON_EXTEND_SMALL_COST, JETON_EXTEND_SMALL_SECONDS } from '@/lib/payments/types';
 
 const PLAN_LABEL_KEY: Record<PremiumPlanId, string> = {
   monthly: 'payPlanMonthly',
@@ -36,6 +36,7 @@ export function PaywallOverlay({
   const fmt = (n: number) => formatPrice(n, region);
 
   const runFakeAd = () => {
+    if (payments.payments.adsWatchedToday >= MAX_ADS_PER_DAY) return toast(t('payDailyAdLimitReached'));
     setWatchingAd(true);
     setTimeout(() => {
       setWatchingAd(false);

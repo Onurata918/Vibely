@@ -17,8 +17,10 @@ export const GAME_COST_HIGH = 10;
 export const GAME_COST_LOW = 5;
 
 export const AD_REWARD_JETONS = 2;
-// Gunluk reklam siniri yok. Kotuye kullanima karsi sonradan sonlu bir sayiya cekilebilir.
-export const MAX_ADS_PER_DAY = Number.POSITIVE_INFINITY;
+// Gunluk reklam siniri. Urun kisiti degil, kotuye kullanim korumasi: AdMob
+// anormal hacimli hesaplari sahte trafik sayip askiya aliyor. Normal kullanici
+// bu sayiya ulasmaz.
+export const MAX_ADS_PER_DAY = 25;
 
 // Davet linkiyle gelen arkadas uygulamaya giris yapinca davet edene verilir.
 export const INVITE_REWARD_JETONS = 50;
