@@ -11,6 +11,7 @@ import { useOkey101Sounds } from '@/hooks/useOkey101Sounds';
 import { canAddTileToMeld, computeOkeyOf, isWildTile, validateMeld } from '@/lib/okey/engine';
 import { calculateOpeningTotal } from '@/lib/okey101/meldValidator';
 import { OKEY101_RULE_PRESETS, type Okey101Meld, type Okey101RuleVariant } from '@/lib/okey101/types';
+import { MeldBoard, OkeyFelt, SideRack, SortButton, TopRack } from '@/components/okey/TableChrome';
 import { TileRack } from '@/components/okey/TileRack';
 import { TileView } from '@/components/okey/TileView';
 import { OpeningProgress } from '@/components/okey101/OpeningProgress';
@@ -229,183 +230,164 @@ export function Okey101Overlay({ participants, onClose }: { participants: Seat[]
 
   if (!me) return null;
 
+  const others = g.players.filter((p) => p.id !== 'me');
+  const myState = g.players.find((p) => p.id === 'me') ?? me;
+  const activeId = g.players[g.currentPlayerIndex]?.id;
+  const seatOf = (p: (typeof g.players)[number]) => ({ name: p.name, c1: p.c1, c2: p.c2, tiles: p.rack.length, opened: p.hasOpened, active: p.id === activeId });
+
+  // Istaka iki katli: taslar ikiye bolunur.
+  const rackTiles = myState.rack;
+  const half = Math.ceil(rackTiles.length / 2);
+  const rackRows = [rackTiles.slice(0, half), rackTiles.slice(half)].map((row) =>
+    row.map((tile) => (
+      <Pressable key={tile.id} onPress={() => game.toggleSelect(me.id, tile.id)}>
+        <TileView tile={tile} size="sm" selected={g.selectedRackIds.includes(tile.id)} isWild={isWildTile(tile, okeyOf)} />
+      </Pressable>
+    ))
+  );
+
   return (
-    <View className="absolute inset-0 bg-vbg z-[300]" style={{ paddingTop: insets.top }}>
-      <Pressable
-        onPress={onClose}
-        style={{ position: 'absolute', top: insets.top + 10, left: 14, zIndex: 10, width: 38, height: 38, borderRadius: 19, backgroundColor: '#1b1629', alignItems: 'center', justifyContent: 'center' }}
-      >
-        <X size={17} color="#fff" />
-      </Pressable>
-      <Pressable
-        onPress={() => sounds.setEnabled(!sounds.enabled)}
-        style={{ position: 'absolute', top: insets.top + 10, right: 14, zIndex: 10, width: 38, height: 38, borderRadius: 19, backgroundColor: '#1b1629', alignItems: 'center', justifyContent: 'center' }}
-      >
-        {sounds.enabled ? <Volume2 size={16} color="#8e879f" /> : <VolumeX size={16} color="#8e879f" />}
-      </Pressable>
+    <View className="absolute inset-0 z-[300]" style={{ paddingTop: insets.top }}>
+      <OkeyFelt />
 
-      <View style={{ flex: 1, paddingBottom: insets.bottom + 10 }}>
-        <View style={{ alignItems: 'center', paddingTop: 54, gap: 6 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#141020', borderWidth: 1, borderColor: 'rgba(139,92,246,.35)', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12 }}>
-            <Avatar person={me} size={24} />
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12.5 }}>
-              {g.phase === 'TURN_DRAW' ? `Sıra: ${me.name} — taş çek` : `Sıra: ${me.name} — düzenle/at`}
-            </Text>
-            {me.hasOpened ? (
-              <View style={{ backgroundColor: 'rgba(74,222,128,.18)', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
-                <Text style={{ fontSize: 9, color: '#4ade80', fontWeight: '800' }}>Açtı</Text>
-              </View>
-            ) : null}
+      {/* ---- Ust serit ---- */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 4 }}>
+        <Pressable onPress={onClose} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(5,16,30,.85)', borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center' }}>
+          <X size={17} color="#fff" />
+        </Pressable>
+
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <View style={{ alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontSize: 8.5, color: '#9fb6d4', fontWeight: '800' }}>GÖSTERGE</Text>
+            {g.indicator ? <TileView tile={g.indicator} size="xs" /> : null}
           </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }}>
-            {g.players
-              .filter((p) => p.id !== me.id)
-              .map((p) => (
-                <View key={p.id} style={{ alignItems: 'center', gap: 2 }}>
-                  <Avatar person={p} size={26} />
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                    <View style={{ backgroundColor: '#1b1629', borderRadius: 9, paddingHorizontal: 6, paddingVertical: 1 }}>
-                      <Text style={{ fontSize: 9, color: '#d6d1e0', fontWeight: '600' }}>{p.rack.length} taş</Text>
-                    </View>
-                    {p.hasOpened ? <Text style={{ fontSize: 9 }}>🔓</Text> : null}
-                  </View>
-                  <Text style={{ fontSize: 9, color: p.score <= 0 ? '#4ade80' : '#f87171', fontWeight: '700' }}>{p.score} p</Text>
-                </View>
-              ))}
-          </ScrollView>
-
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 20 }}>
-            <View style={{ alignItems: 'center', gap: 3 }}>
-              <Text style={{ fontSize: 9, color: '#635c73', fontWeight: '700' }}>Gösterge</Text>
-              {g.indicator ? <TileView tile={g.indicator} size="sm" /> : null}
-            </View>
-            <View style={{ alignItems: 'center', gap: 3 }}>
-              <Text style={{ fontSize: 9, color: '#eab308', fontWeight: '700' }}>Okey</Text>
-              {okeyOf ? <TileView tile={{ id: 'okey-of', kind: 'number', color: okeyOf.color, number: okeyOf.number }} size="sm" isWild /> : null}
-            </View>
-            <View style={{ alignItems: 'center', gap: 3 }}>
-              <Text style={{ fontSize: 9, color: '#635c73', fontWeight: '700' }}>Puanın</Text>
-              <Text style={{ fontSize: 14, color: (g.players.find((p) => p.id === 'me')?.score ?? 0) <= 0 ? '#4ade80' : '#f87171', fontWeight: '800' }}>
-                {g.players.find((p) => p.id === 'me')?.score ?? 0}
-              </Text>
+          <View style={{ alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontSize: 8.5, color: '#fbbf24', fontWeight: '800' }}>OKEY</Text>
+            {okeyOf ? <TileView tile={{ id: 'okey-of', kind: 'number', color: okeyOf.color, number: okeyOf.number }} size="xs" isWild /> : null}
+          </View>
+          <View style={{ alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontSize: 8.5, color: '#9fb6d4', fontWeight: '800' }}>PUAN</Text>
+            <View style={{ backgroundColor: 'rgba(5,16,30,.85)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(255,255,255,.14)' }}>
+              <Text style={{ fontSize: 13, fontWeight: '900', color: (myState.score ?? 0) <= 0 ? '#4ade80' : '#fca5a5' }}>{myState.score ?? 0}</Text>
             </View>
           </View>
         </View>
 
-        <LinearGradient
-          colors={['#146e46', '#0d5234', '#0a3f28']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={{ marginTop: 8, marginHorizontal: 12, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,.08)', overflow: 'hidden' }}
-        >
-          <ScrollView
-            style={{ maxHeight: 190, flexGrow: 0, flexShrink: 0 }}
-            contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 12, paddingVertical: 10, alignContent: 'flex-start' }}
-          >
-            {g.tableMelds.length === 0 ? (
-              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', paddingVertical: 10, width: '100%', textAlign: 'center' }}>Masada henüz taş yok</Text>
-            ) : (
-              g.tableMelds.map((meld) => {
-                const canAdd = !!(me.hasOpened && singleSelectedTile && canAddTileToMeld(meld.tiles, singleSelectedTile, okeyOf).ok);
-                return <MeldRow key={meld.id} meld={meld} highlighted={canAdd} onPress={me.hasOpened ? () => handleAddToMeld(meld.id) : undefined} />;
-              })
-            )}
-          </ScrollView>
-        </LinearGradient>
+        <Pressable onPress={() => sounds.setEnabled(!sounds.enabled)} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(5,16,30,.85)', borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center' }}>
+          {sounds.enabled ? <Volume2 size={16} color="#fff" /> : <VolumeX size={16} color="#fff" />}
+        </Pressable>
+      </View>
 
-        {g.pendingMelds.length > 0 ? (
-          <>
-            <OpeningProgress current={pendingValue} required={g.rules.openingScore} />
-            <View style={{ marginHorizontal: 12, marginTop: 6, padding: 8, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(234,179,8,.5)', borderStyle: 'dashed', backgroundColor: 'rgba(234,179,8,.06)' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <Text style={{ fontSize: 10.5, color: '#eab308', fontWeight: '800' }}>Bekleyen açılış</Text>
-                <Pressable onPress={() => game.cancelPending(me.id)}>
-                  <Text style={{ fontSize: 10.5, color: '#f87171', fontWeight: '700' }}>Geri al</Text>
-                </Pressable>
-              </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {g.pendingMelds.map((meld) => (
-                  <MeldRow key={meld.id} meld={meld} />
-                ))}
-              </View>
-              {pendingValue >= g.rules.openingScore ? (
-                <Pressable onPress={handleCommitOpening} style={{ marginTop: 8 }}>
-                  <LinearGradient colors={['#3b82f6', '#8b5cf6', '#ec4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12.5 }}>Aç ({pendingValue} p)</Text>
-                  </LinearGradient>
-                </Pressable>
-              ) : null}
-            </View>
-          </>
-        ) : null}
+      {/* ---- Masa ---- */}
+      <View style={{ flex: 1, flexDirection: 'row', paddingHorizontal: 8, gap: 6 }}>
+        {others[0] ? <SideRack seat={seatOf(others[0])} side="left" /> : null}
 
-        {g.phase === 'TURN_DRAW' ? (
-          <View style={{ paddingVertical: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 26 }}>
-            <Pressable onPress={() => handleDraw(false)} style={{ alignItems: 'center', gap: 6 }}>
-              <View style={{ width: 52, height: 68, borderRadius: 9, backgroundColor: '#1b1629', borderWidth: 1.5, borderColor: 'rgba(255,255,255,.15)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                <Layers size={18} color="#8e879f" />
-                <Text style={{ fontSize: 10, color: '#8e879f' }}>{g.drawPile.length}</Text>
+        <View style={{ flex: 1, gap: 6 }}>
+          {others[1] ? <TopRack seat={seatOf(others[1])} /> : null}
+
+          <MeldBoard>
+            <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, padding: 8, alignContent: 'flex-start' }}>
+              {g.tableMelds.length === 0 ? (
+                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,.32)', paddingVertical: 14, width: '100%', textAlign: 'center' }}>Masada henüz perde yok</Text>
+              ) : (
+                g.tableMelds.map((meld) => {
+                  const canAdd = !!(myState.hasOpened && singleSelectedTile && canAddTileToMeld(meld.tiles, singleSelectedTile, okeyOf).ok);
+                  return <MeldRow key={meld.id} meld={meld} highlighted={canAdd} onPress={myState.hasOpened ? () => handleAddToMeld(meld.id) : undefined} />;
+                })
+              )}
+            </ScrollView>
+          </MeldBoard>
+
+          {/* cekme ve atilan destesi */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22, paddingVertical: 2 }}>
+            <Pressable onPress={() => handleDraw(false)} disabled={g.phase !== 'TURN_DRAW'} style={{ alignItems: 'center', gap: 3, opacity: g.phase === 'TURN_DRAW' ? 1 : 0.45 }}>
+              <View style={{ width: 40, height: 55, borderRadius: 6, backgroundColor: '#1d3250', alignItems: 'center', justifyContent: 'center' }}>
+                <Layers size={16} color="#cfe0f5" />
+                <Text style={{ fontSize: 9.5, color: '#cfe0f5', fontWeight: '800', marginTop: 2 }}>{g.drawPile.length}</Text>
               </View>
-              <Text style={{ fontSize: 11, color: '#8e879f', fontWeight: '600' }}>Desteden çek</Text>
+              <Text style={{ fontSize: 9, color: '#9fb6d4', fontWeight: '700' }}>DESTE</Text>
             </Pressable>
 
-            <Pressable onPress={() => handleDraw(true)} disabled={g.discardPile.length === 0} style={{ alignItems: 'center', gap: 6, opacity: g.discardPile.length > 0 ? 1 : 0.35 }}>
+            <Pressable onPress={() => handleDraw(true)} disabled={g.phase !== 'TURN_DRAW' || g.discardPile.length === 0} style={{ alignItems: 'center', gap: 3, opacity: g.phase === 'TURN_DRAW' && g.discardPile.length > 0 ? 1 : 0.45 }}>
               {g.discardPile.length > 0 ? (
                 <TileView tile={g.discardPile[g.discardPile.length - 1]} size="md" isWild={isWildTile(g.discardPile[g.discardPile.length - 1], okeyOf)} />
               ) : (
-                <View style={{ width: 42, height: 56, borderRadius: 9, borderWidth: 1.5, borderColor: 'rgba(255,255,255,.12)', borderStyle: 'dashed' }} />
+                <View style={{ width: 40, height: 55, borderRadius: 6, borderWidth: 1.5, borderColor: 'rgba(255,255,255,.18)', borderStyle: 'dashed' }} />
               )}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <ArrowDownToLine size={12} color="#8e879f" />
-                <Text style={{ fontSize: 11, color: '#8e879f', fontWeight: '600' }}>Atılandan çek</Text>
-              </View>
+              <Text style={{ fontSize: 9, color: '#9fb6d4', fontWeight: '700' }}>ATILAN</Text>
             </Pressable>
           </View>
-        ) : null}
-
-        <View style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
-          <TileRack>
-            {me.rack.map((tile) => (
-              <Pressable key={tile.id} onPress={() => game.toggleSelect(me.id, tile.id)}>
-                <TileView tile={tile} size="sm" selected={g.selectedRackIds.includes(tile.id)} isWild={isWildTile(tile, okeyOf)} />
-              </Pressable>
-            ))}
-          </TileRack>
         </View>
 
+        {others[2] ? <SideRack seat={seatOf(others[2])} side="right" /> : null}
+      </View>
+
+      {/* ---- Bekleyen acilis ---- */}
+      {g.pendingMelds.length > 0 ? (
+        <View style={{ paddingHorizontal: 10, paddingBottom: 4 }}>
+          <OpeningProgress current={pendingValue} required={g.rules.openingScore} />
+          <View style={{ marginTop: 4, padding: 7, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(250,204,21,.5)', borderStyle: 'dashed', backgroundColor: 'rgba(250,204,21,.08)' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+              <Text style={{ fontSize: 10, color: '#fbbf24', fontWeight: '900' }}>BEKLEYEN AÇILIŞ</Text>
+              <Pressable onPress={() => game.cancelPending(me.id)}>
+                <Text style={{ fontSize: 10, color: '#fca5a5', fontWeight: '800' }}>Geri al</Text>
+              </Pressable>
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5 }}>
+              {g.pendingMelds.map((meld) => (
+                <MeldRow key={meld.id} meld={meld} />
+              ))}
+            </View>
+            {pendingValue >= g.rules.openingScore ? (
+              <Pressable onPress={handleCommitOpening} style={{ marginTop: 6 }}>
+                <LinearGradient colors={['#22c55e', '#16a34a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 12 }}>AÇ ({pendingValue} p)</Text>
+                </LinearGradient>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
+      {/* ---- Istaka ---- */}
+      <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 6, paddingHorizontal: 8, paddingBottom: 4 }}>
+        <Pressable onPress={() => game.sortRack(me.id, 'number')}>
+          <SortButton label={'SIRA\nLA'} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <TileRack rows={rackRows} />
+        </View>
+        <Pressable onPress={() => game.sortRack(me.id, 'color')}>
+          <SortButton label={'RENK'} />
+        </Pressable>
+      </View>
+
+      {/* ---- Aksiyonlar ---- */}
+      <View style={{ paddingHorizontal: 10, paddingBottom: insets.bottom + 6, gap: 4 }}>
         {g.phase === 'TURN_ACTION' || g.phase === 'TURN_DISCARD' ? (
-          <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', paddingTop: 4, flexWrap: 'wrap' }}>
-            <Pressable onPress={() => game.sortRack(me.id, 'number')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 42, paddingHorizontal: 12, borderRadius: 13, backgroundColor: '#1b1629' }}>
-              <Shuffle size={14} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 12 }}>Sayıya Göre</Text>
-            </Pressable>
-            <Pressable onPress={() => game.sortRack(me.id, 'color')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 42, paddingHorizontal: 12, borderRadius: 13, backgroundColor: '#1b1629' }}>
-              <Shuffle size={14} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: 12 }}>Renge Göre</Text>
-            </Pressable>
+          <View style={{ flexDirection: 'row', gap: 7, justifyContent: 'center', flexWrap: 'wrap' }}>
             {g.selectedRackIds.length >= 3 ? (
               <Pressable
                 onPress={handleFormMeld}
                 disabled={!canFormMeld}
-                style={{ height: 42, paddingHorizontal: 14, borderRadius: 13, backgroundColor: canFormMeld ? '#4ade80' : '#2a2438', alignItems: 'center', justifyContent: 'center', opacity: canFormMeld ? 1 : 0.6 }}
+                style={{ height: 38, paddingHorizontal: 16, borderRadius: 11, backgroundColor: canFormMeld ? '#22c55e' : 'rgba(5,16,30,.8)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,.16)' }}
               >
-                <Text style={{ color: canFormMeld ? '#0b0714' : '#8e879f', fontWeight: '700', fontSize: 12 }}>{canFormMeld ? 'Perde Yap' : 'Geçersiz'}</Text>
+                <Text style={{ color: canFormMeld ? '#06250f' : '#8fa6c2', fontWeight: '900', fontSize: 12 }}>{canFormMeld ? 'PERDE YAP' : 'GEÇERSİZ'}</Text>
               </Pressable>
             ) : null}
             {g.selectedRackIds.length === 1 && g.pendingMelds.length === 0 ? (
-              <Pressable onPress={handleDiscard} style={{ height: 42, paddingHorizontal: 14, borderRadius: 13, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Taşı At</Text>
+              <Pressable onPress={handleDiscard} style={{ height: 38, paddingHorizontal: 18, borderRadius: 11, backgroundColor: '#dc2626', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,.22)' }}>
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 12 }}>TAŞI AT</Text>
               </Pressable>
             ) : null}
           </View>
         ) : null}
-        {g.selectedRackIds.length === 1 && me.hasOpened ? (
-          <Text style={{ fontSize: 10.5, color: anyMeldAddable ? '#4ade80' : '#635c73', textAlign: 'center', paddingTop: 4 }}>
+        {g.selectedRackIds.length === 1 && myState.hasOpened ? (
+          <Text style={{ fontSize: 10, color: anyMeldAddable ? '#4ade80' : '#7f99b8', textAlign: 'center' }}>
             {anyMeldAddable ? 'Bu taş bir perdeye eklenebilir — perdeye dokun' : 'Bu taş hiçbir perdeye eklenemiyor'}
           </Text>
         ) : null}
-        {game.lastError ? <Text style={{ fontSize: 10.5, color: '#f87171', textAlign: 'center', paddingTop: 4 }}>{game.lastError}</Text> : null}
+        {game.lastError ? <Text style={{ fontSize: 10.5, color: '#fca5a5', textAlign: 'center', fontWeight: '700' }}>{game.lastError}</Text> : null}
       </View>
     </View>
   );

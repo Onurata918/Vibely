@@ -4,60 +4,86 @@ import { Text, View } from 'react-native';
 
 import { OKEY_COLOR_HEX, type OkeyTile } from '@/lib/okey/engine';
 
+type Size = 'xs' | 'sm' | 'md' | 'lg';
+
 type Props = {
   tile: OkeyTile;
-  size?: 'sm' | 'md' | 'lg';
+  size?: Size;
   selected?: boolean;
   dim?: boolean;
   isWild?: boolean;
 };
 
+const DIMS: Record<Size, { w: number; h: number; font: number; dot: number }> = {
+  xs: { w: 24, h: 33, font: 12, dot: 4.5 },
+  sm: { w: 32, h: 44, font: 16, dot: 6 },
+  md: { w: 40, h: 55, font: 21, dot: 7.5 },
+  lg: { w: 50, h: 68, font: 26, dot: 9 },
+};
+
+/**
+ * Tek bir okey tasi. Gercek taslardaki gibi fildisi yuz, renkli rakam ve
+ * rakamin altinda kucuk bir daire var; ust kenarda ince bir parlaklik seridi
+ * tasa kabarik bir his veriyor.
+ */
 export function TileView({ tile, size = 'md', selected = false, dim = false, isWild = false }: Props) {
-  const dims = size === 'lg' ? { w: 52, h: 68, font: 24, notch: 5 } : size === 'sm' ? { w: 34, h: 46, font: 15, notch: 3.5 } : { w: 42, h: 56, font: 19, notch: 4 };
+  const d = DIMS[size];
   const isJoker = tile.kind === 'fakejoker';
   const color = isJoker ? '#7c3aed' : OKEY_COLOR_HEX[tile.color];
-  const faceColors: [string, string] = isWild ? ['#fef9c3', '#fde68a'] : ['#fffdf7', '#eee2c3'];
 
   return (
     <View
       style={{
-        width: dims.w,
-        height: dims.h,
-        borderRadius: 7,
-        opacity: dim ? 0.45 : 1,
-        transform: selected ? [{ translateY: -8 }] : undefined,
+        width: d.w,
+        height: d.h,
+        borderRadius: 6,
+        opacity: dim ? 0.5 : 1,
+        transform: selected ? [{ translateY: -10 }] : undefined,
+        backgroundColor: '#cbbfa6',
+        padding: 1.5,
         shadowColor: '#000',
-        shadowOpacity: 0.4,
-        shadowRadius: selected ? 7 : 3,
+        shadowOpacity: selected ? 0.5 : 0.35,
+        shadowRadius: selected ? 8 : 3,
         shadowOffset: { width: 0, height: selected ? 5 : 2 },
-        elevation: selected ? 7 : 3,
+        elevation: selected ? 8 : 3,
       }}
     >
       <LinearGradient
-        colors={faceColors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
+        colors={isWild ? ['#fffbe8', '#fdeec0'] : ['#fffefa', '#f0e8d6']}
+        start={{ x: 0.3, y: 0 }}
+        end={{ x: 0.7, y: 1 }}
         style={{
           flex: 1,
-          borderRadius: 7,
-          borderWidth: selected ? 2.5 : 1,
-          borderColor: selected ? '#8b5cf6' : isWild ? '#eab308' : 'rgba(0,0,0,.22)',
+          borderRadius: 5,
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
+          borderWidth: selected ? 1.5 : 0,
+          borderColor: selected ? '#8b5cf6' : 'transparent',
         }}
       >
-        {/* ust cam parlaklik seridi (fildisi tas hissi) */}
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '38%', backgroundColor: 'rgba(255,255,255,.5)', borderTopLeftRadius: 6, borderTopRightRadius: 6 }} />
-        {/* alt notch: gercek okey tasindaki kertigi cagristiran ince cizgi */}
-        <View style={{ position: 'absolute', bottom: dims.notch, left: '18%', right: '18%', height: 1.5, borderRadius: 1, backgroundColor: 'rgba(0,0,0,.14)' }} />
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '26%', backgroundColor: 'rgba(255,255,255,.75)' }} />
+        {isWild ? <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(234,179,8,.14)' }} /> : null}
+
         {isJoker ? (
-          <Text style={{ fontSize: dims.font * 0.85 }}>🃏</Text>
+          <Text style={{ fontSize: d.font * 0.9, color, fontWeight: '900' }}>★</Text>
         ) : (
-          <Text style={{ color, fontWeight: '900', fontSize: dims.font, textShadowColor: 'rgba(0,0,0,.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 0 }}>
-            {tile.number}
-          </Text>
+          <Text style={{ color, fontWeight: '900', fontSize: d.font, marginTop: -d.dot * 0.5, lineHeight: d.font * 1.12 }}>{tile.number}</Text>
         )}
+
+        {/* rakamin altindaki daire — gercek okey tasindaki isaret */}
+        <View
+          style={{
+            position: 'absolute',
+            bottom: d.h * 0.1,
+            width: d.dot,
+            height: d.dot,
+            borderRadius: d.dot / 2,
+            backgroundColor: '#ffffff',
+            borderWidth: 0.8,
+            borderColor: 'rgba(0,0,0,.28)',
+          }}
+        />
       </LinearGradient>
     </View>
   );

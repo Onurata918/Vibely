@@ -9,7 +9,8 @@ import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { isWildTile } from '@/lib/okey/engine';
 import { TileView } from '@/components/okey/TileView';
-import { TileRack } from '@/components/okey/TileRack';
+import { MeldBoard, OkeyFelt, SideRack, SortButton, TopRack } from '@/components/okey/TableChrome';
+import { splitRackRows, TileRack } from '@/components/okey/TileRack';
 
 export function OkeyOverlay() {
   const insets = useSafeAreaInsets();
@@ -31,6 +32,14 @@ export function OkeyOverlay() {
 
   const currentPlayer = o.players[o.currentPlayerIndex];
   const winner = o.players.find((p) => p.id === o.winnerId);
+  const others = o.players.filter((p) => p.id !== 'me');
+  const seatOf = (p: (typeof o.players)[number]) => ({
+    name: p.name,
+    c1: p.c1,
+    c2: p.c2,
+    tiles: o.handCounts[p.id] ?? 0,
+    active: p.id === currentPlayer?.id,
+  });
 
   const tapTile = (i: number) => {
     if (o.phase !== 'discard') return;
@@ -50,109 +59,106 @@ export function OkeyOverlay() {
   };
 
   return (
-    <View className="absolute inset-0 bg-vbg z-[300]" style={{ paddingTop: insets.top }}>
+    <View className="absolute inset-0 z-[300]" style={{ paddingTop: insets.top }}>
+      <OkeyFelt />
       <Pressable
         onPress={closeOkeyGame}
-        style={{ position: 'absolute', top: insets.top + 10, left: 14, zIndex: 10, width: 38, height: 38, borderRadius: 19, backgroundColor: '#1b1629', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'absolute', top: insets.top + 8, left: 12, zIndex: 40, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(5,16,30,.85)', borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center' }}
       >
         <X size={17} color="#fff" />
       </Pressable>
 
       {o.phase !== 'game-over' ? (
-        <View style={{ flex: 1, paddingBottom: insets.bottom + 16 }}>
-          <View style={{ alignItems: 'center', paddingTop: 8, gap: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#141020', borderWidth: 1, borderColor: 'rgba(139,92,246,.35)', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12 }}>
-              <Avatar person={currentPlayer} size={26} />
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>
-                {o.phase === 'draw'
-                  ? t('okeyTurnDraw', { name: currentPlayer?.name ?? '' })
-                  : t('okeyTurnDiscard', { name: currentPlayer?.name ?? '' })}
-              </Text>
+        <View style={{ flex: 1 }}>
+          {/* ---- Ust serit ---- */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 2, paddingBottom: 6, paddingHorizontal: 56 }}>
+            <View style={{ alignItems: 'center', gap: 2 }}>
+              <Text style={{ fontSize: 8.5, color: '#9fb6d4', fontWeight: '800' }}>{t('okeyIndicatorLabel')}</Text>
+              {o.indicator ? <TileView tile={o.indicator} size="xs" /> : null}
             </View>
+            <View style={{ alignItems: 'center', gap: 2 }}>
+              <Text style={{ fontSize: 8.5, color: '#fbbf24', fontWeight: '800' }}>{t('okeyOkeyLabel')}</Text>
+              {o.okeyOf ? <TileView tile={{ id: 'okey-of', kind: 'number', color: o.okeyOf.color, number: o.okeyOf.number }} size="xs" isWild /> : null}
+            </View>
+          </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }}>
-              {o.players
-                .filter((p) => p.id !== currentPlayer?.id)
-                .map((p) => (
-                  <View key={p.id} style={{ alignItems: 'center', gap: 3 }}>
-                    <Avatar person={p} size={28} />
-                    <View style={{ backgroundColor: '#1b1629', borderRadius: 9, paddingHorizontal: 6, paddingVertical: 1 }}>
-                      <Text style={{ fontSize: 9.5, color: '#d6d1e0', fontWeight: '600' }}>{`${o.handCounts[p.id] ?? 0}`}</Text>
-                    </View>
+          {/* ---- Masa ---- */}
+          <View style={{ flex: 1, flexDirection: 'row', paddingHorizontal: 8, gap: 6 }}>
+            {others[0] ? <SideRack seat={seatOf(others[0])} side="left" /> : null}
+
+            <View style={{ flex: 1, gap: 6 }}>
+              {others[1] ? <TopRack seat={seatOf(others[1])} /> : null}
+
+              <MeldBoard>
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 26 }}>
+                    <Pressable onPress={drawOkeyFromPile} disabled={o.phase !== 'draw'} style={{ alignItems: 'center', gap: 5, opacity: o.phase === 'draw' ? 1 : 0.45 }}>
+                      <View style={{ width: 50, height: 68, borderRadius: 7, backgroundColor: '#1d3250', borderWidth: 1, borderColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+                        <Layers size={18} color="#cfe0f5" />
+                        <Text style={{ fontSize: 10, color: '#cfe0f5', fontWeight: '800' }}>{o.drawPileCount}</Text>
+                      </View>
+                      <Text style={{ fontSize: 9, color: '#9fb6d4', fontWeight: '800' }}>{t('okeyDrawFromPileButton')}</Text>
+                    </Pressable>
+
+                    <Pressable onPress={drawOkeyFromDiscard} disabled={o.phase !== 'draw' || !o.discardTop} style={{ alignItems: 'center', gap: 5, opacity: o.phase === 'draw' && o.discardTop ? 1 : 0.45 }}>
+                      {o.discardTop ? (
+                        <TileView tile={o.discardTop} size="lg" isWild={isWildTile(o.discardTop, o.okeyOf)} />
+                      ) : (
+                        <View style={{ width: 50, height: 68, borderRadius: 7, borderWidth: 1.5, borderColor: 'rgba(255,255,255,.18)', borderStyle: 'dashed' }} />
+                      )}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <ArrowDownToLine size={11} color="#9fb6d4" />
+                        <Text style={{ fontSize: 9, color: '#9fb6d4', fontWeight: '800' }}>{t('okeyDrawFromDiscardButton')}</Text>
+                      </View>
+                    </Pressable>
                   </View>
-                ))}
-            </ScrollView>
 
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 22 }}>
-              <View style={{ alignItems: 'center', gap: 4 }}>
-                <Text style={{ fontSize: 9.5, color: '#635c73', fontWeight: '700' }}>{t('okeyIndicatorLabel')}</Text>
-                {o.indicator ? <TileView tile={o.indicator} size="sm" /> : null}
-              </View>
-              <View style={{ alignItems: 'center', gap: 4 }}>
-                <Text style={{ fontSize: 9.5, color: '#eab308', fontWeight: '700' }}>{t('okeyOkeyLabel')}</Text>
-                {o.okeyOf ? <TileView tile={{ id: 'okey-of', kind: 'number', color: o.okeyOf.color, number: o.okeyOf.number }} size="sm" isWild /> : null}
-              </View>
+                  <Text style={{ fontSize: 10.5, color: 'rgba(255,255,255,.45)', textAlign: 'center', paddingHorizontal: 16 }}>
+                    {o.phase === 'draw' ? t('okeyTurnDraw', { name: currentPlayer?.name ?? '' }) : t('okeyArrangeHint')}
+                  </Text>
+                </View>
+              </MeldBoard>
             </View>
+
+            {others[2] ? <SideRack seat={seatOf(others[2])} side="right" /> : null}
           </View>
 
-          {o.phase === 'draw' ? (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 26 }}>
-              <Pressable onPress={drawOkeyFromPile} style={{ alignItems: 'center', gap: 6 }}>
-                <View style={{ width: 60, height: 78, borderRadius: 9, backgroundColor: '#1b1629', borderWidth: 1.5, borderColor: 'rgba(255,255,255,.15)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                  <Layers size={20} color="#8e879f" />
-                  <Text style={{ fontSize: 10, color: '#8e879f' }}>{o.drawPileCount}</Text>
-                </View>
-                <Text style={{ fontSize: 11, color: '#8e879f', fontWeight: '600' }}>{t('okeyDrawFromPileButton')}</Text>
-              </Pressable>
-
-              <Pressable onPress={drawOkeyFromDiscard} disabled={!o.discardTop} style={{ alignItems: 'center', gap: 6, opacity: o.discardTop ? 1 : 0.35 }}>
-                {o.discardTop ? (
-                  <TileView tile={o.discardTop} size="lg" isWild={isWildTile(o.discardTop, o.okeyOf)} />
-                ) : (
-                  <View style={{ width: 52, height: 68, borderRadius: 9, borderWidth: 1.5, borderColor: 'rgba(255,255,255,.12)', borderStyle: 'dashed' }} />
+          {/* ---- Istaka ---- */}
+          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 6, paddingHorizontal: 8, paddingTop: 6, paddingBottom: 4 }}>
+            <Pressable onPress={autoSortOkeyHand}>
+              <SortButton label={'SIRA\nLA'} />
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <TileRack
+                rows={splitRackRows(
+                  o.hand.map((tile, i) => (
+                    <Pressable key={tile.id} onPress={() => tapTile(i)}>
+                      <TileView tile={tile} size="sm" selected={selectedIndex === i} isWild={isWildTile(tile, o.okeyOf)} />
+                    </Pressable>
+                  ))
                 )}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <ArrowDownToLine size={12} color="#8e879f" />
-                  <Text style={{ fontSize: 11, color: '#8e879f', fontWeight: '600' }}>{t('okeyDrawFromDiscardButton')}</Text>
-                </View>
-              </Pressable>
+              />
             </View>
-          ) : (
-            <View style={{ alignItems: 'center', paddingVertical: 10 }}>
-              <Text style={{ fontSize: 11, color: '#635c73' }}>{t('okeyArrangeHint')}</Text>
-            </View>
-          )}
-
-          <View style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
-            <TileRack>
-              {o.hand.map((tile, i) => (
-                <Pressable key={tile.id} onPress={() => tapTile(i)}>
-                  <TileView tile={tile} size="md" selected={selectedIndex === i} isWild={isWildTile(tile, o.okeyOf)} />
-                </Pressable>
-              ))}
-            </TileRack>
+            <Pressable onPress={autoSortOkeyHand}>
+              <SortButton label={'RENK'} />
+            </Pressable>
           </View>
 
-          {o.phase === 'discard' ? (
-            <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'center', paddingTop: 4 }}>
-              <Pressable onPress={autoSortOkeyHand} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingHorizontal: 14, borderRadius: 14, backgroundColor: '#1b1629' }}>
-                <Shuffle size={14} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 12.5 }}>{t('okeySortButton')}</Text>
+          {/* ---- Aksiyonlar ---- */}
+          <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', paddingBottom: insets.bottom + 8, minHeight: 44 }}>
+            {o.phase === 'discard' && selectedIndex !== null ? (
+              <Pressable onPress={discardSelected} style={{ height: 38, paddingHorizontal: 18, borderRadius: 11, backgroundColor: '#dc2626', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,.22)' }}>
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 12 }}>{t('okeyDiscardSelectedButton')}</Text>
               </Pressable>
-              {selectedIndex !== null ? (
-                <Pressable onPress={discardSelected} style={{ height: 44, paddingHorizontal: 16, borderRadius: 14, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12.5 }}>{t('okeyDiscardSelectedButton')}</Text>
-                </Pressable>
-              ) : null}
-              {o.canWinMelds ? (
-                <Pressable onPress={declareOkeyWin}>
-                  <GradientView angle={90} style={{ height: 44, paddingHorizontal: 18, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12.5 }}>{t('okeyDeclareWinButton')}</Text>
-                  </GradientView>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
+            ) : null}
+            {o.phase === 'discard' && o.canWinMelds ? (
+              <Pressable onPress={declareOkeyWin}>
+                <GradientView angle={90} style={{ height: 38, paddingHorizontal: 20, borderRadius: 11, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 12 }}>{t('okeyDeclareWinButton')}</Text>
+                </GradientView>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 26 }}>

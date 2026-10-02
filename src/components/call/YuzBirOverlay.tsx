@@ -10,7 +10,7 @@ import { useApp, type YuzBirMeld } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { canAddTileToMeld, isWildTile, type OkeyColor, type OkeyTile } from '@/lib/okey/engine';
 import { TileView } from '@/components/okey/TileView';
-import { TileRack } from '@/components/okey/TileRack';
+import { splitRackRows, TileRack } from '@/components/okey/TileRack';
 
 function MeldRow({
   meld,
@@ -226,13 +226,11 @@ export function YuzBirOverlay() {
           ) : null}
 
           <View style={{ paddingHorizontal: 10, paddingVertical: 6 }}>
-            <TileRack>
-              {y.hand.map((tile) => (
-                <Pressable key={tile.id} onPress={() => toggleYuzBirHandSelect(tile.id)}>
-                  <TileView tile={tile} size="sm" selected={y.selectedHandIds.includes(tile.id)} isWild={isWildTile(tile, y.okeyOf)} />
-                </Pressable>
-              ))}
-            </TileRack>
+            <TileRack rows={splitRackRows(y.hand.map((tile) => (
+              <Pressable key={tile.id} onPress={() => toggleYuzBirHandSelect(tile.id)}>
+                <TileView tile={tile} size="sm" selected={y.selectedHandIds.includes(tile.id)} isWild={isWildTile(tile, y.okeyOf)} />
+              </Pressable>
+            )))} />
           </View>
 
           {y.phase === 'discard' ? (
