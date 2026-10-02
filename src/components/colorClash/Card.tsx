@@ -7,13 +7,14 @@ import { cardLabel } from '@/lib/colorClash/validation';
 
 type Props = {
   card: ClashCard;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   dim?: boolean;
   lifted?: boolean;
   faceDown?: boolean;
 };
 
 const SIZES = {
+  xs: { w: 26, h: 37, num: 11, corner: 6, symbol: 6 },
   sm: { w: 52, h: 74, num: 20, corner: 9, symbol: 10 },
   md: { w: 74, h: 104, num: 30, corner: 12, symbol: 13 },
   lg: { w: 96, h: 134, num: 38, corner: 14, symbol: 16 },
@@ -21,7 +22,7 @@ const SIZES = {
 
 // Orijinal Vibely kart sirti: marka moru uzerinde soyut dalga + "V" motifi.
 // UNO'nun kart sirtina benzemez.
-export function CardBack({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+export function CardBack({ size = 'md' }: { size?: 'xs' | 'sm' | 'md' | 'lg' }) {
   const d = SIZES[size];
   return (
     <View style={{ width: d.w, height: d.h, borderRadius: 12, overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(255,255,255,.14)' }}>

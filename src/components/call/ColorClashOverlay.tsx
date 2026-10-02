@@ -48,6 +48,30 @@ function OpponentVideoTile({ seat }: { seat: Seat }) {
   );
 }
 
+// Rakibin elindeki kartlar: yelpaze seklinde dizilmis kart sirtlari.
+function FannedBacks({ count }: { count: number }) {
+  const shown = Math.min(count, 5);
+  const spread = 13;
+  return (
+    <View style={{ height: 40, width: 56, alignItems: 'center', justifyContent: 'center' }}>
+      {Array.from({ length: shown }).map((_, i) => {
+        const offset = i - (shown - 1) / 2;
+        return (
+          <View
+            key={i}
+            style={{
+              position: 'absolute',
+              transform: [{ rotate: `${offset * spread}deg` }, { translateX: offset * 7 }],
+            }}
+          >
+            <CardBack size="xs" />
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export function ColorClashOverlay({ participants, onClose }: { participants: Seat[]; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { user } = useApp();
@@ -55,6 +79,7 @@ export function ColorClashOverlay({ participants, onClose }: { participants: Sea
   const sounds = useColorClashSounds();
   const [rules, setRules] = useState<ClashRules>(DEFAULT_CLASH_RULES);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [table, setTable] = useState({ w: 0, h: 0 });
   const g = game.state;
 
   const startGame = () => {
@@ -181,118 +206,187 @@ export function ColorClashOverlay({ participants, onClose }: { participants: Sea
     setSelectedCardId(null);
   };
 
+  const opponents = g.players.filter((p) => p.id !== 'me');
+  const myTurn = me.id === 'me';
+  const meSeat = g.players.find((p) => p.id === 'me') ?? me;
+  const canDraw = myTurn && !(g.hasDrawnThisTurn && g.pendingDrawPenalty === 0);
+
+  // Masa elipsi: ustte baslar, elimize yer kalacak sekilde biter.
+  // Masa neredeyse tum ekrani kaplar; elimizdeki kartlar masanin alt kenarina oturur.
+  const feltTop = 30;
+  const feltH = Math.max(260, table.h - feltTop - 38);
+
+  // Rakip yayi masanin ust kismina, desteler ise biraz asagiya — ikisinin arasi
+  // bos kalmasin diye ayri hesaplanir.
+  const centerY = feltTop + feltH * 0.36;
+  const pileY = feltTop + feltH * 0.52;
+
+  const seatAt = (i: number, n: number) => {
+    const theta = Math.PI - (Math.PI * (i + 0.5)) / n;
+    return {
+      x: table.w / 2 + table.w * 0.37 * Math.cos(theta),
+      y: centerY - feltH * 0.26 * Math.sin(theta),
+    };
+  };
+
   return (
     <View className="absolute inset-0 bg-vbg z-[300]" style={{ paddingTop: insets.top }}>
       <Pressable
         onPress={onClose}
-        style={{ position: 'absolute', top: insets.top + 10, left: 14, zIndex: 20, width: 38, height: 38, borderRadius: 19, backgroundColor: '#1b1629', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'absolute', top: insets.top + 10, left: 14, zIndex: 30, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(14,10,26,.8)', alignItems: 'center', justifyContent: 'center' }}
       >
         <X size={17} color="#fff" />
       </Pressable>
       <Pressable
         onPress={() => sounds.setEnabled(!sounds.enabled)}
-        style={{ position: 'absolute', top: insets.top + 10, right: 14, zIndex: 20, width: 38, height: 38, borderRadius: 19, backgroundColor: '#1b1629', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'absolute', top: insets.top + 10, right: 14, zIndex: 30, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(14,10,26,.8)', alignItems: 'center', justifyContent: 'center' }}
       >
-        {sounds.enabled ? <Volume2 size={16} color="#8e879f" /> : <VolumeX size={16} color="#8e879f" />}
+        {sounds.enabled ? <Volume2 size={16} color="#cfc9db" /> : <VolumeX size={16} color="#cfc9db" />}
       </Pressable>
 
-      <View style={{ flex: 1, paddingBottom: insets.bottom + 10 }}>
-        {/* kompakt katilimci seridi (Vibely'nin video-call farklandiricisi) */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 60, paddingTop: 6, alignItems: 'center' }}>
-          <LocalVideoStrip />
-          {g.players
-            .filter((p) => p.id !== 'me')
-            .map((p) => (
-              <OpponentVideoTile key={p.id} seat={p} />
-            ))}
-        </ScrollView>
+      {/* ---- Masa ---- */}
+      <View style={{ flex: 1 }} onLayout={(e) => setTable({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
+        <LinearGradient
+          colors={['#3b2d6b', '#241a47', '#140e29']}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{ position: 'absolute', left: 10, right: 10, top: feltTop, height: feltH, borderRadius: 190, borderWidth: 1, borderColor: 'rgba(167,139,250,.18)' }}
+        />
 
-        <View style={{ alignItems: 'center', paddingTop: 10, gap: 6 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#141020', borderWidth: 1, borderColor: 'rgba(139,92,246,.35)', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12 }}>
-            <Avatar person={me} size={22} />
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12.5 }}>{me.id === 'me' ? 'Senin Sıran' : `Sıra: ${me.name}`}</Text>
-          </View>
-          {catchable ? (
-            <Pressable
-              onPress={() => game.catchForgotDeclare(me.id, catchable.id)}
-              style={{ backgroundColor: 'rgba(239,68,68,.16)', borderWidth: 1, borderColor: 'rgba(239,68,68,.4)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 5 }}
-            >
-              <Text style={{ color: '#f87171', fontSize: 11, fontWeight: '700' }}>{catchable.name} bildirmedi — Yakala!</Text>
-            </Pressable>
-          ) : null}
-          {g.lastMessage ? (
-            <View style={{ backgroundColor: 'rgba(139,92,246,.16)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 }}>
-              <Text style={{ color: '#c4b5fd', fontSize: 11, fontWeight: '600' }}>{g.lastMessage}</Text>
-            </View>
-          ) : null}
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 20, paddingTop: 4 }}>
-            {g.players
-              .filter((p) => p.id !== me.id)
-              .map((p) => (
-                <View key={p.id} style={{ alignItems: 'center', gap: 2 }}>
-                  <Text style={{ fontSize: 9.5, color: '#d6d1e0', fontWeight: '600' }}>{p.name}</Text>
-                  <View style={{ backgroundColor: '#1b1629', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1 }}>
-                    <Text style={{ fontSize: 9.5, color: p.hand.length === 1 ? '#f87171' : '#8e879f', fontWeight: '700' }}>{p.hand.length} kart</Text>
-                  </View>
-                </View>
-              ))}
-          </ScrollView>
-        </View>
-
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <RotateCw size={13} color="#635c73" style={{ transform: [{ scaleX: g.direction === -1 ? -1 : 1 }] }} />
-            {g.activeColor ? (
-              <>
-                <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: CLASH_COLOR_HEX[g.activeColor] }} />
-                <Text style={{ fontSize: 11.5, color: '#8e879f', fontWeight: '600' }}>
-                  {CLASH_COLOR_SYMBOL[g.activeColor]} {g.activeColor}
-                </Text>
-              </>
-            ) : null}
-            {g.pendingDrawPenalty > 0 ? (
-              <View style={{ marginLeft: 8, backgroundColor: 'rgba(239,68,68,.18)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
-                <Text style={{ color: '#f87171', fontWeight: '800', fontSize: 12 }}>+{g.pendingDrawPenalty}</Text>
-              </View>
-            ) : null}
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 24 }}>
-            <Pressable onPress={() => { game.drawCard(me.id); sounds.playDraw(); }} disabled={g.hasDrawnThisTurn && g.pendingDrawPenalty === 0}>
-              <View style={{ opacity: g.hasDrawnThisTurn && g.pendingDrawPenalty === 0 ? 0.4 : 1 }}>
-                <CardBack size="lg" />
-                <Text style={{ position: 'absolute', bottom: 6, right: 8, fontSize: 10, color: '#fff', fontWeight: '700' }}>{g.drawPile.length}</Text>
-              </View>
-            </Pressable>
-
-            {top ? <Card card={top} size="lg" /> : null}
-          </View>
-
-          {g.hasDrawnThisTurn && g.pendingDrawPenalty === 0 ? (
-            <Pressable onPress={() => game.endTurnAfterDraw(me.id)}>
-              <View style={{ height: 40, paddingHorizontal: 18, borderRadius: 13, backgroundColor: '#1b1629', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 12.5 }}>Turu Bitir</Text>
-              </View>
-            </Pressable>
-          ) : null}
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingVertical: 14, alignItems: 'flex-end' }}>
-          {me.hand.map((card) => {
-            const playable = top ? canPlayCard(card, top, g.activeColor) : false;
-            const isSelected = selectedCardId === card.id;
+        {/* Rakipler */}
+        {table.w > 0 &&
+          opponents.map((p, i) => {
+            const { x, y } = seatAt(i, opponents.length);
+            const isTurn = g.players[g.currentPlayerIndex]?.id === p.id;
             return (
-              <Pressable
-                key={card.id}
-                onPress={() => (isSelected ? handlePlay(card.id) : setSelectedCardId(card.id))}
-                hitSlop={4}
-              >
-                <Card card={card} size="md" dim={!playable} lifted={isSelected} />
-              </Pressable>
+              <View key={p.id} style={{ position: 'absolute', left: x - 40, top: y - 52, width: 80, alignItems: 'center', gap: 3 }}>
+                <FannedBacks count={p.hand.length} />
+                <View style={{ borderRadius: 12, borderWidth: isTurn ? 2 : 0, borderColor: '#a78bfa' }}>
+                  <Avatar person={p} size={38} />
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(14,10,26,.75)', borderRadius: 9, paddingHorizontal: 7, paddingVertical: 2 }}>
+                  <Text style={{ fontSize: 9.5, color: '#fff', fontWeight: '700' }} numberOfLines={1}>
+                    {p.name}
+                  </Text>
+                  <Text style={{ fontSize: 9.5, fontWeight: '800', color: p.hand.length === 1 ? '#f87171' : '#a59fb8' }}>{p.hand.length}</Text>
+                </View>
+              </View>
             );
           })}
-        </ScrollView>
+
+        {/* Masa ortasi: cekme destesi, atilan kart, yon */}
+        {table.w > 0 ? (
+          <View style={{ position: 'absolute', left: 0, right: 0, top: pileY - 58, alignItems: 'center', gap: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+              <Pressable onPress={() => { game.drawCard(me.id); sounds.playDraw(); }} disabled={!canDraw}>
+                <View style={{ opacity: canDraw ? 1 : 0.45 }}>
+                  <CardBack size="md" />
+                  <View style={{ position: 'absolute', bottom: 5, right: 5, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 7, paddingHorizontal: 5, paddingVertical: 1 }}>
+                    <Text style={{ fontSize: 9.5, color: '#fff', fontWeight: '800' }}>{g.drawPile.length}</Text>
+                  </View>
+                </View>
+              </Pressable>
+
+              <View style={{ alignItems: 'center' }}>
+                {top ? <Card card={top} size="md" /> : null}
+                {g.activeColor ? (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: -9,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      backgroundColor: 'rgba(14,10,26,.9)',
+                      borderRadius: 999,
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                    }}
+                  >
+                    <View style={{ width: 9, height: 9, borderRadius: 3, backgroundColor: CLASH_COLOR_HEX[g.activeColor] }} />
+                    <Text style={{ fontSize: 9.5, color: '#fff', fontWeight: '700' }}>{CLASH_COLOR_SYMBOL[g.activeColor]}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <RotateCw size={13} color="#a78bfa" style={{ transform: [{ scaleX: g.direction === -1 ? -1 : 1 }] }} />
+              {g.pendingDrawPenalty > 0 ? (
+                <View style={{ backgroundColor: 'rgba(239,68,68,.22)', borderRadius: 9, paddingHorizontal: 8, paddingVertical: 2 }}>
+                  <Text style={{ color: '#f87171', fontWeight: '900', fontSize: 12 }}>+{g.pendingDrawPenalty}</Text>
+                </View>
+              ) : null}
+              {g.hasDrawnThisTurn && g.pendingDrawPenalty === 0 && myTurn ? (
+                <Pressable onPress={() => game.endTurnAfterDraw(me.id)}>
+                  <View style={{ height: 30, paddingHorizontal: 14, borderRadius: 11, backgroundColor: 'rgba(14,10,26,.85)', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11.5 }}>Turu Bitir</Text>
+                  </View>
+                </Pressable>
+              ) : null}
+            </View>
+
+            {g.lastMessage ? (
+              <View style={{ backgroundColor: 'rgba(139,92,246,.2)', borderRadius: 11, paddingHorizontal: 11, paddingVertical: 4, maxWidth: 260 }}>
+                <Text style={{ color: '#ddd6fe', fontSize: 10.5, fontWeight: '600', textAlign: 'center' }}>{g.lastMessage}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* ---- Alt sirit: ben, elim, son kart butonu ---- */}
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: insets.bottom + 6 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingLeft: 74, paddingRight: 96, paddingTop: 22, paddingBottom: 18, alignItems: 'flex-end' }}
+          >
+            {meSeat.hand.map((card, i) => {
+              const playable = top ? canPlayCard(card, top, g.activeColor) : false;
+              const isSelected = selectedCardId === card.id;
+              return (
+                <Pressable
+                  key={card.id}
+                  onPress={() => (isSelected ? handlePlay(card.id) : setSelectedCardId(card.id))}
+                  hitSlop={4}
+                  style={{ marginLeft: i === 0 ? 0 : -18, zIndex: isSelected ? 50 : i }}
+                >
+                  <Card card={card} size="md" dim={!playable} lifted={isSelected} />
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <View style={{ position: 'absolute', left: 14, bottom: 14, alignItems: 'center', gap: 3 }}>
+            <View style={{ borderRadius: 14, borderWidth: myTurn ? 2 : 0, borderColor: '#4ade80' }}>
+              <LocalVideoStrip />
+            </View>
+            <Text style={{ fontSize: 9, color: myTurn ? '#4ade80' : '#8e879f', fontWeight: '800' }}>{myTurn ? 'SIRA SENDE' : 'BEKLE'}</Text>
+          </View>
+
+          {catchable && catchable.id !== 'me' ? (
+            <Pressable onPress={() => game.catchForgotDeclare('me', catchable.id)} style={{ position: 'absolute', right: 12, bottom: 14 }}>
+              <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,.22)' }}>
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 11 }}>YAKALA</Text>
+                <Text style={{ color: 'rgba(255,255,255,.85)', fontWeight: '700', fontSize: 8 }} numberOfLines={1}>
+                  {catchable.name}
+                </Text>
+              </View>
+            </Pressable>
+          ) : meSeat.hand.length === 1 && !meSeat.declaredLastCard ? (
+            <Pressable onPress={() => { game.declareLastCard('me'); sounds.playLastCard(); }} style={{ position: 'absolute', right: 12, bottom: 14 }}>
+              <LinearGradient
+                colors={['#3b82f6', '#8b5cf6', '#ec4899']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,.22)' }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 11 }}>SON</Text>
+                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 11 }}>KART</Text>
+              </LinearGradient>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       {/* Renk secici */}
