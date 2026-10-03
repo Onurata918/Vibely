@@ -70,6 +70,11 @@ assignment — Faz 5 fixture'ları ile), T114–T145 arası skor senaryoları Fa
 T114, T115, T117, T120–T142 aralığındaki skor ve ceza senaryoları;
 T121, T122 stok bitişi tur motorunda doğrulandı.
 
+**Property testleri — `property.test.ts` (5 test geçti):** P01 (korunum),
+P02 (geçersiz plan state'i değiştirmez), P03 (determinizm), P06 (sıra
+permütasyonu). P04, P05, P07, P08 projeksiyon/kalıcılık gerektirdiği için
+Faz 6–7'ye bağlı.
+
 Henüz bağlanmayanlar: T116 (son sahte okey atışı NORMAL sayılır — motor bunu
 `isRealJoker` üzerinden zaten ayırıyor, ayrı testi Faz 8 masa fixture'ıyla),
 T118/T119 (CLEAN'in reddi — tur motorunda uygulandı, testi Faz 8'de tam el
