@@ -1,0 +1,566 @@
+{
+  "schemaNote": "Validator-only inputs. Unique fixture IDs are not a full deck. Engine tests must use valid 106-tile state builders. PAIR value is diagnostic; opening uses pair count.",
+  "cases": [
+    {
+      "id": "M001",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "RUN",
+      "tiles": [
+        {
+          "id": "f1-t0",
+          "face": {
+            "color": "RED",
+            "value": 4
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f1-t1",
+          "face": {
+            "color": "RED",
+            "value": 5
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f1-t2",
+          "face": {
+            "color": "RED",
+            "value": 6
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": true,
+        "value": 15
+      }
+    },
+    {
+      "id": "M002",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "RUN",
+      "tiles": [
+        {
+          "id": "f2-t0",
+          "face": {
+            "color": "RED",
+            "value": 12
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f2-t1",
+          "face": {
+            "color": "RED",
+            "value": 13
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f2-t2",
+          "face": {
+            "color": "RED",
+            "value": 1
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": false,
+        "value": null
+      }
+    },
+    {
+      "id": "M003",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "RUN",
+      "tiles": [
+        {
+          "id": "f3-t0",
+          "face": {
+            "color": "RED",
+            "value": 11
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f3-t1",
+          "face": {
+            "color": "RED",
+            "value": 12
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f3-t2",
+          "face": {
+            "color": "RED",
+            "value": 13
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": true,
+        "value": 36
+      }
+    },
+    {
+      "id": "M004",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "RUN",
+      "tiles": [
+        {
+          "id": "f4-t0",
+          "face": {
+            "color": "RED",
+            "value": 1
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f4-t1",
+          "face": {
+            "color": "RED",
+            "value": 2
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f4-t2",
+          "face": {
+            "color": "RED",
+            "value": 3
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": true,
+        "value": 6
+      }
+    },
+    {
+      "id": "M005",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "RUN",
+      "tiles": [
+        {
+          "id": "f5-t0",
+          "face": {
+            "color": "RED",
+            "value": 4
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f5-t1",
+          "face": {
+            "color": "BLUE",
+            "value": 5
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f5-t2",
+          "face": {
+            "color": "RED",
+            "value": 6
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": false,
+        "value": null
+      }
+    },
+    {
+      "id": "M006",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "RUN",
+      "tiles": [
+        {
+          "id": "f6-t0",
+          "face": {
+            "color": "RED",
+            "value": 4
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f6-t1",
+          "face": {
+            "color": "RED",
+            "value": 6
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f6-t2",
+          "face": {
+            "color": "RED",
+            "value": 7
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": false,
+        "value": null
+      }
+    },
+    {
+      "id": "M007",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "RUN",
+      "tiles": [
+        {
+          "id": "f7-t0",
+          "face": {
+            "color": "RED",
+            "value": 4
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f7-t1",
+          "face": {
+            "color": "RED",
+            "value": 5
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": false,
+        "value": null
+      }
+    },
+    {
+      "id": "M008",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "RUN",
+      "tiles": [
+        {
+          "id": "f8-t0",
+          "face": {
+            "color": "RED",
+            "value": 6
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f8-t1",
+          "face": {
+            "color": "RED",
+            "value": 4
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f8-t2",
+          "face": {
+            "color": "RED",
+            "value": 5
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": true,
+        "value": 15
+      }
+    },
+    {
+      "id": "M009",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "SET",
+      "tiles": [
+        {
+          "id": "f9-t0",
+          "face": {
+            "color": "RED",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f9-t1",
+          "face": {
+            "color": "BLUE",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f9-t2",
+          "face": {
+            "color": "BLACK",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": true,
+        "value": 24
+      }
+    },
+    {
+      "id": "M010",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "SET",
+      "tiles": [
+        {
+          "id": "f10-t0",
+          "face": {
+            "color": "RED",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f10-t1",
+          "face": {
+            "color": "BLUE",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f10-t2",
+          "face": {
+            "color": "BLACK",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f10-t3",
+          "face": {
+            "color": "YELLOW",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": true,
+        "value": 32
+      }
+    },
+    {
+      "id": "M011",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "SET",
+      "tiles": [
+        {
+          "id": "f11-t0",
+          "face": {
+            "color": "RED",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f11-t1",
+          "face": {
+            "color": "RED",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f11-t2",
+          "face": {
+            "color": "BLUE",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": false,
+        "value": null
+      }
+    },
+    {
+      "id": "M012",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "SET",
+      "tiles": [
+        {
+          "id": "f12-t0",
+          "face": {
+            "color": "RED",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f12-t1",
+          "face": {
+            "color": "BLUE",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f12-t2",
+          "face": {
+            "color": "BLACK",
+            "value": 9
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": false,
+        "value": null
+      }
+    },
+    {
+      "id": "M013",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "PAIR",
+      "tiles": [
+        {
+          "id": "f13-t0",
+          "face": {
+            "color": "RED",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f13-t1",
+          "face": {
+            "color": "RED",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": true,
+        "value": 16
+      }
+    },
+    {
+      "id": "M014",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "PAIR",
+      "tiles": [
+        {
+          "id": "f14-t0",
+          "face": {
+            "color": "RED",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f14-t1",
+          "face": {
+            "color": "BLUE",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": false,
+        "value": null
+      }
+    },
+    {
+      "id": "M015",
+      "indicator": {
+        "color": "YELLOW",
+        "value": 12
+      },
+      "kind": "PAIR",
+      "tiles": [
+        {
+          "id": "f15-t0",
+          "face": {
+            "color": "RED",
+            "value": 8
+          },
+          "kind": "NUMBER"
+        },
+        {
+          "id": "f15-t1",
+          "face": {
+            "color": "RED",
+            "value": 9
+          },
+          "kind": "NUMBER"
+        }
+      ],
+      "assignments": [],
+      "expected": {
+        "valid": false,
+        "value": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+Vibely uygulamama 4 kişinin mevcut görüntülü/sesli görüşmesini sürdürürken oynayacağı
+101 Okey oyununu uygula. Oyun davranışı için 101 Okey Plus referansımızdır.
+
+Önce repo talimatlarını ve docs/okey101/ altındaki bütün başlangıç paketini oku.
+Başka yolda açtıysam bu klasörü bul. Repo yapısını incele; auth/video/oda akışını anla.
+Yeni uygulama kurma; mevcut Vibely içinde ilerle.
+
+GAME_RULES.md ve rules.config.json geliştirme için kesin şartnamedir. SOURCES.md'deki
+OFFICIAL kurallar ile BASELINE kararları ayır. RULE_QUESTIONS.md'deki doğrulanmamış
+Plus ayrıntılarını uydurma. Açık geliştirme varsayılanlarını uygula, farkları raporla.
+
+Önce kısa repo değerlendirmesi ve dosya planı ver, sonra motor ve otomatik testlerle
+başla. Ardından sunucu otoritesi, kalıcılık, WebSocket, reconnect/timeout, mobil masa
+ve video odası entegrasyonunu IMPLEMENTATION_PLAN.md sırasıyla tamamla.
+
+OKEY101_TESTS.md'deki bütün senaryoları otomatik test veya belirtilen manuel kabul
+kontrolüne bağla. Testleri geçirmek için kural değiştirme. Başka oyuncunun elini
+istemciye yollama. Aynı request retry iki hamle yapamasın. Kameralar oyun açılınca
+yeniden bağlanmasın. Kullanıcı 21/22 taşla gerçekten tam el oynayabilsin.
+
+Her aşamada uygun testleri çalıştır. Tamamlanmayan işi tamamlandı deme. Sonuçta
+değişen dosyaları, gerçek test sonuçlarını, dört kullanıcıyla deneme adımlarını,
+gereken dış ayarları ve Plus uyumluluğu için kalan soruları ver.
