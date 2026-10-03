@@ -1,0 +1,9 @@
+Implement Color Clash inside the existing Vibely video-call room.
+
+First read every file under @docs/color-clash and inspect the repository, including its auth, navigation, room, LiveKit lifecycle, backend and package manager. Do not create a separate app.
+
+Follow GAME_RULES.md and rules.config.json exactly. Use the Color Clash names and create original UI/card visuals. Start with the deterministic TypeScript engine and automated tests, then implement the authoritative multiplayer server, persistence, reconnect/timeouts, mobile table and the existing video-room integration in IMPLEMENTATION_PLAN.md order.
+
+The four players must continue seeing and hearing one another while playing. Opponent hands and deck order must never reach another client. Request retries must never play or draw twice. Implement the Clash 4 challenge and Clash! call windows on the server.
+
+Run tests at every phase. At the end report changed files, actual test results, four-user manual testing steps, external configuration and unfinished items. Do not report local bots or mocked seats as completed multiplayer.

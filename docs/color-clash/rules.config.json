@@ -1,0 +1,23 @@
+{
+  "profileId": "color-clash-classic-v1",
+  "playersMin": 2,
+  "playersMax": 6,
+  "defaultPlayers": 4,
+  "startingHandSize": 7,
+  "winningScore": 500,
+  "allowVoluntaryDraw": true,
+  "drawnCardMayBePlayed": true,
+  "afterDrawingOnlyDrawnCardMayBePlayed": true,
+  "stackDrawCards": false,
+  "jumpIn": false,
+  "sevenZeroRule": false,
+  "forcePlay": false,
+  "wildDrawFourChallenge": true,
+  "clashCallWindow": "until_next_player_action_commits",
+  "missedClashPenalty": 2,
+  "turnSeconds": 30,
+  "disconnectGraceSeconds": 90,
+  "timeoutPolicy": "draw_one_then_pass",
+  "dealerRotation": "clockwise",
+  "twoPlayerReverseActsAsSkip": true
+}
