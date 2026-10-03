@@ -42,8 +42,34 @@ export function gameWith(options: {
     hands.push(options.hands?.[seat] ?? filler[seat]);
   }
 
-  const deck = deckWith({ hands, start: options.start });
-  const base = createRound({ deck, dealerSeat: rules.playerCount - 1, rules, random: identityShuffle });
+  // createRound her seat'e tam `startingHandSize` kart dagitir. Testlerde daha
+  // kucuk el kurmak icin fazla dagitilan kartlar destenin dibine geri konur;
+  // boylece 108 korunumu bozulmaz.
+  const padded = hands.map((hand, seat) => {
+    const explicitHand = options.hands?.[seat];
+    if (!explicitHand || explicitHand.length >= rules.startingHandSize) return hand;
+    const explicit: Card[] = Object.values(options.hands ?? {}).flat() as Card[];
+    const taken = new Set([...explicit.map((c) => c.id), options.start.id]);
+    const pad = ALL_CARDS.filter((c) => !taken.has(c.id)).slice(0, rules.startingHandSize - explicitHand.length);
+    for (const c of pad) taken.add(c.id);
+    return [...explicitHand, ...pad];
+  });
+
+  const deck = deckWith({ hands: padded, start: options.start });
+  let base = createRound({ deck, dealerSeat: rules.playerCount - 1, rules, random: identityShuffle });
+
+  const returned: Card[] = [];
+  base = {
+    ...base,
+    seats: base.seats.map((seat) => {
+      const explicitHand = options.hands?.[seat.seat];
+      if (!explicitHand || explicitHand.length >= rules.startingHandSize) return seat;
+      const keep = new Set(explicitHand.map((c) => c.id));
+      returned.push(...seat.hand.filter((c) => !keep.has(c.id)));
+      return { ...seat, hand: seat.hand.filter((c) => keep.has(c.id)) };
+    }),
+  };
+  base = { ...base, drawPile: [...base.drawPile, ...returned] };
 
   return {
     ...base,

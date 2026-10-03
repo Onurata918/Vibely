@@ -87,8 +87,12 @@ export function applyAction(state: FullState, actorSeat: number, action: Action,
       return drawCard(state, actorSeat, deps);
     case 'PASS_AFTER_DRAW':
       return passAfterDraw(state, actorSeat);
+    case 'ACCEPT_DRAW_FOUR':
+      return respondToClashFour(state, actorSeat, false, deps);
+    case 'CHALLENGE_DRAW_FOUR':
+      return respondToClashFour(state, actorSeat, true, deps);
     default:
-      // Clash 4 cevaplari ve yakalama Faz 4-5'te eklenir.
+      // Yakalama Faz 5'te eklenir.
       return reject(state, 'INVALID_PHASE');
   }
 }
@@ -169,19 +173,22 @@ function playCard(
   }
 
   if (card.kind === 'CLASH_FOUR') {
-    // Faz 4: kanit gizlice kaydedilir, sira itiraz penceresine gecer.
+    // Kanit gizlice kaydedilir; sira itiraz penceresine gecer.
     const targetSeat = seatAfter(seat, draft.direction, draft.rules.playerCount);
     draft = {
       ...draft,
       clashFour: { playerSeat: seat, targetSeat, hadPreviousColorMatch: hasColorMatch(hand, previousColor) },
       phase: 'AWAIT_DRAW_FOUR_RESPONSE',
       currentSeat: targetSeat,
+      // C046: son kart Clash 4 ise el, itiraz cozulmeden puanlanmaz.
+      status: remaining.length === 0 ? 'ROUND_END_PENDING' : draft.status,
     };
     assertConservation(draft);
     return { ok: true, state: { ...draft, version: state.version + 1 } };
   }
 
   draft = applyCardEffect(draft, card, deps);
+  if (remaining.length === 0) draft = endRound(draft, seat);
   assertConservation(draft);
   return { ok: true, state: { ...draft, version: state.version + 1 } };
 }
@@ -215,6 +222,43 @@ function applyCardEffect(state: FullState, card: Card, deps: Deps): FullState {
       // NUMBER ve COLOR_SHIFT: sira bir ilerler.
       return advanceTurn(state, 1);
   }
+}
+
+/**
+ * GAME_RULES "Clash 4 yasalligi ve itiraz". Yalnizca cezayi alacak siradaki
+ * oyuncu cevap verebilir (C039); pencere kapandiktan sonra reddedilir (C044).
+ */
+function respondToClashFour(state: FullState, seat: number, challenging: boolean, deps: Deps): EngineResult {
+  const pending = state.clashFour;
+  if (!pending || state.phase !== 'AWAIT_DRAW_FOUR_RESPONSE') return reject(state, 'CHALLENGE_NOT_ALLOWED');
+  if (pending.targetSeat !== seat) return reject(state, 'CHALLENGE_NOT_ALLOWED');
+
+  const { playerCount } = state.rules;
+  let draft: FullState = { ...state, clashFour: null, phase: 'AWAIT_ACTION', drawnCardId: null };
+
+  if (!challenging) {
+    // C042: itiraz edilmezse itiraz eden 4 ceker ve atlanir.
+    draft = drawCards(draft, seat, 4, deps.random).state;
+    draft = { ...draft, currentSeat: seatAfter(seat, draft.direction, playerCount) };
+  } else if (pending.hadPreviousColorMatch) {
+    // C040: itiraz dogru — oynayan 4 ceker, itiraz eden normal turuna gecer.
+    draft = drawCards(draft, pending.playerSeat, 4, deps.random).state;
+    draft = { ...draft, currentSeat: seat };
+  } else {
+    // C041: itiraz yanlis — itiraz eden 6 ceker ve atlanir.
+    draft = drawCards(draft, seat, 6, deps.random).state;
+    draft = { ...draft, currentSeat: seatAfter(seat, draft.direction, playerCount) };
+  }
+
+  // C046/C047: bekleyen el, ceza kartlari dagitildiktan sonra kapanir.
+  if (state.status === 'ROUND_END_PENDING') draft = endRound(draft, pending.playerSeat);
+
+  assertConservation(draft);
+  return { ok: true, state: { ...draft, version: state.version + 1 } };
+}
+
+function endRound(state: FullState, winnerSeat: number): FullState {
+  return { ...state, status: 'ROUND_ENDED', winnerSeat, missedClashTargetSeat: null, phase: 'AWAIT_ACTION', drawnCardId: null };
 }
 
 export function advanceTurn(state: FullState, steps: number): FullState {

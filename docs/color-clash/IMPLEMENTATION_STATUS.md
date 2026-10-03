@@ -59,8 +59,8 @@ ve mobil masa bunlardan bağımsız tamamlanabilir.
 | 1 Repo keşfi | TAMAM |
 | 2 Model | TAMAM |
 | 3 Motor | TAMAM |
-| 4 Clash 4 | BAŞLADI |
-| 5 Clash çağrısı | — |
+| 4 Clash 4 | TAMAM |
+| 5 Clash çağrısı | BAŞLADI |
 | 6 El/maç | — |
 | 7 Server | ENGELLİ (backend yok) |
 | 8 Kalıcılık | ENGELLİ (backend yok) |
@@ -83,6 +83,18 @@ C024, C025, C026, C027, C028, C029, C030, C031, C032, C033).
 
 Komutlar: `npx tsc --noEmit` (temiz), `npx vitest run src/engine/colorClash`
 (34/34 geçti).
+
+**Faz 4 — `clashFour.test.ts` (13 test geçti):**
+C034, C035, C036, C037, C038, C039, C040, C041, C042, C043, C044, C045,
+C046, C047.
+
+Gizlilik: `src/engine/colorClash/projection.ts` public ve private görünümleri
+açık alan listesi olarak üretir. C043 testi public JSON'u tarayıp
+`hadPreviousColorMatch`, `clashFour` ve rakip cardId'lerinin bulunmadığını
+doğruluyor.
+
+Komutlar: `npx tsc --noEmit` (temiz), `npx vitest run src/engine/colorClash`
+(47/47 geçti).
 
 ### Faz 3'te korunum kontrolünün yakaladığı hata
 
