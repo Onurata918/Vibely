@@ -76,6 +76,18 @@ export type Deps = { random: RandomSource };
 export function applyAction(state: FullState, actorSeat: number, action: Action, deps: Deps): EngineResult {
   if (state.status !== 'ACTIVE' && state.status !== 'ROUND_END_PENDING') return reject(state, 'ROUND_ENDED');
 
+  const windowBefore = state.missedClashTargetSeat;
+  const result = dispatch(state, actorSeat, action, deps);
+
+  // C052: siradaki oyuncunun ilk oyun aksiyonu commit edilince yakalama
+  // penceresi kapanir. Yakalamanin kendisi pencereyi zaten kapatiyor.
+  if (result.ok && windowBefore !== null && action.type !== 'CATCH_MISSED_CLASH') {
+    return { ok: true, state: { ...result.state, missedClashTargetSeat: null } };
+  }
+  return result;
+}
+
+function dispatch(state: FullState, actorSeat: number, action: Action, deps: Deps): EngineResult {
   switch (action.type) {
     case 'CHOOSE_START_COLOR':
       return chooseStartColor(state, actorSeat, action.color);
@@ -91,10 +103,28 @@ export function applyAction(state: FullState, actorSeat: number, action: Action,
       return respondToClashFour(state, actorSeat, false, deps);
     case 'CHALLENGE_DRAW_FOUR':
       return respondToClashFour(state, actorSeat, true, deps);
-    default:
-      // Yakalama Faz 5'te eklenir.
-      return reject(state, 'INVALID_PHASE');
+    case 'CATCH_MISSED_CLASH':
+      return catchMissedClash(state, actorSeat, action.targetSeat, deps);
   }
+}
+
+/**
+ * GAME_RULES "Clash! cagrisi": cagri yapmadan bire dusen oyuncu, siradaki
+ * oyuncunun ilk aksiyonu commit edilene kadar yakalanabilir. Ilk gecerli
+ * yakalama 2 kart verdirir; gec, yinelenen veya yanlis yakalama state'i
+ * degistirmez (C050-C053).
+ */
+function catchMissedClash(state: FullState, actorSeat: number, targetSeat: number, deps: Deps): EngineResult {
+  if (state.missedClashTargetSeat === null) return reject(state, 'CATCH_WINDOW_CLOSED');
+  if (state.missedClashTargetSeat !== targetSeat) return reject(state, 'CATCH_WINDOW_CLOSED');
+  // Oyuncu kendi kacirdigi cagriyi yakalayamaz.
+  if (actorSeat === targetSeat) return reject(state, 'CATCH_WINDOW_CLOSED');
+
+  const { state: penalised } = drawCards(state, targetSeat, state.rules.missedClashPenalty, deps.random);
+  // Pencere ilk gecerli yakalamada kapanir; ikinci yakalama ek ceza vermez.
+  const draft: FullState = { ...penalised, missedClashTargetSeat: null };
+  assertConservation(draft);
+  return { ok: true, state: { ...draft, version: state.version + 1 } };
 }
 
 function chooseStartColor(state: FullState, seat: number, color: Color): EngineResult {
@@ -157,19 +187,18 @@ function playCard(
 
   let draft: FullState = {
     ...state,
-    seats: state.seats.map((s) => (s.seat === seat ? { ...s, hand: remaining, calledClash: calledClash || s.calledClash } : s)),
+    seats: state.seats.map((s) => (s.seat === seat ? { ...s, hand: remaining, calledClash: remaining.length === 1 ? calledClash : false } : s)),
     discardPile: [...state.discardPile, card],
     activeColor: isWild(card) ? (chosenColor as Color) : (card.color as Color),
     phase: 'AWAIT_ACTION',
     drawnCardId: null,
   };
 
-  // GAME_RULES "Clash! cagrisi": iki karttan bire dususte cagri gerekir.
-  // Son kart oynanirken cagri aranmaz (C055).
+  // GAME_RULES "Clash! cagrisi": yalnizca **kart oynayarak** iki karttan bire
+  // dususte cagri gerekir. Son kart oynanirken aranmaz (C055); cekerek bire
+  // dusmek cagri gerektirmez (C054, drawCard bu alani hic set etmez).
   if (remaining.length === 1 && !calledClash) {
     draft = { ...draft, missedClashTargetSeat: seat };
-  } else if (remaining.length !== 1) {
-    draft = { ...draft, missedClashTargetSeat: null, seats: draft.seats.map((s) => (s.seat === seat ? { ...s, calledClash: false } : s)) };
   }
 
   if (card.kind === 'CLASH_FOUR') {
@@ -259,6 +288,22 @@ function respondToClashFour(state: FullState, seat: number, challenging: boolean
 
 function endRound(state: FullState, winnerSeat: number): FullState {
   return { ...state, status: 'ROUND_ENDED', winnerSeat, missedClashTargetSeat: null, phase: 'AWAIT_ACTION', drawnCardId: null };
+}
+
+/**
+ * GAME_RULES "Sunucu ve sure": sure dolunca sunucu bir kart ceker ve turu
+ * gecirir; otomatik oynamaz (C063). Sira ilerledigi icin ayni tur icin ikinci
+ * bir timeout kart cektirmez (C064).
+ */
+export function applyTimeout(state: FullState, seat: number, deps: Deps): EngineResult {
+  if (state.status !== 'ACTIVE') return reject(state, 'ROUND_ENDED');
+  if (state.currentSeat !== seat) return reject(state, 'NOT_YOUR_TURN');
+
+  // Zaten cektiyse yeniden cekmez, yalnizca turu gecirir.
+  const draft = state.phase === 'AFTER_DRAW' ? state : drawCards(state, seat, 1, deps.random).state;
+  const advanced = advanceTurn({ ...draft, missedClashTargetSeat: null }, 1);
+  assertConservation(advanced);
+  return { ok: true, state: { ...advanced, version: state.version + 1 } };
 }
 
 export function advanceTurn(state: FullState, steps: number): FullState {

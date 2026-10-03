@@ -5,22 +5,12 @@ import { ALL_CARDS, deckWith, identityShuffle, num } from './fixtures';
 
 export const deps: Deps = { random: identityShuffle };
 
-/** Her oyuncuya cakismayan dolgu eli verir. */
-function fillerHands(playerCount: number, used: Card[]): Card[][] {
-  const taken = new Set(used.map((c) => c.id));
-  const pool = ALL_CARDS.filter((c) => !taken.has(c.id) && c.kind === 'NUMBER');
-  const hands: Card[][] = [];
-  let cursor = 0;
-  for (let seat = 0; seat < playerCount; seat++) {
-    hands.push(pool.slice(cursor, cursor + 7));
-    cursor += 7;
-  }
-  return hands;
-}
-
 /**
  * Belirli eller ve belirli bir ust kartla oyun kurar.
- * Verilmeyen eller cakismayan sayi kartlariyla doldurulur.
+ *
+ * Verilmeyen eller cakismayan kartlarla doldurulur. Acikca verilen el
+ * `startingHandSize`'dan kisaysa, dagitimda fazla gelen kartlar destenin dibine
+ * geri konur; boylece tek kartlik el kurulabilir ve 108 korunumu bozulmaz.
  */
 export function gameWith(options: {
   hands?: Partial<Record<number, Card[]>>;
@@ -32,51 +22,53 @@ export function gameWith(options: {
   drawPile?: Card[];
 }): FullState {
   const rules: Rules = { ...DEFAULT_RULES, ...options.rules };
-  const explicit = Object.values(options.hands ?? {}).flat() as Card[];
-  // Zorlanan cekme destesi kartlari dolgu ellerine de dagitilmamali; yoksa
-  // ayni kart iki bolgede olur ve korunum bozulur.
-  const filler = fillerHands(rules.playerCount, [...explicit, options.start, ...(options.drawPile ?? [])]);
+  const explicit: Card[] = Object.values(options.hands ?? {}).flat() as Card[];
 
-  const hands: Card[][] = [];
+  // Tek paylasilan "kullanildi" kumesi: hicbir kart iki yerde olamaz.
+  const taken = new Set<string>([...explicit.map((c) => c.id), options.start.id, ...(options.drawPile ?? []).map((c) => c.id)]);
+  const pool = ALL_CARDS.filter((c) => !taken.has(c.id));
+  let cursor = 0;
+  const nextFromPool = (count: number): Card[] => {
+    const slice = pool.slice(cursor, cursor + count);
+    cursor += count;
+    for (const c of slice) taken.add(c.id);
+    return slice;
+  };
+
+  const explicitHands: (Card[] | undefined)[] = [];
+  const dealtHands: Card[][] = [];
   for (let seat = 0; seat < rules.playerCount; seat++) {
-    hands.push(options.hands?.[seat] ?? filler[seat]);
+    const own = options.hands?.[seat];
+    explicitHands.push(own);
+    const base = own ?? [];
+    dealtHands.push([...base, ...nextFromPool(rules.startingHandSize - base.length)]);
   }
 
-  // createRound her seat'e tam `startingHandSize` kart dagitir. Testlerde daha
-  // kucuk el kurmak icin fazla dagitilan kartlar destenin dibine geri konur;
-  // boylece 108 korunumu bozulmaz.
-  const padded = hands.map((hand, seat) => {
-    const explicitHand = options.hands?.[seat];
-    if (!explicitHand || explicitHand.length >= rules.startingHandSize) return hand;
-    const explicit: Card[] = Object.values(options.hands ?? {}).flat() as Card[];
-    const taken = new Set([...explicit.map((c) => c.id), options.start.id]);
-    const pad = ALL_CARDS.filter((c) => !taken.has(c.id)).slice(0, rules.startingHandSize - explicitHand.length);
-    for (const c of pad) taken.add(c.id);
-    return [...explicitHand, ...pad];
-  });
+  const deck = deckWith({ hands: dealtHands, start: options.start, rest: options.drawPile });
+  let state = createRound({ deck, dealerSeat: rules.playerCount - 1, rules, random: identityShuffle });
 
-  const deck = deckWith({ hands: padded, start: options.start });
-  let base = createRound({ deck, dealerSeat: rules.playerCount - 1, rules, random: identityShuffle });
-
+  // Acikca kisa verilen elleri kirp; fazlalari destenin dibine geri koy.
   const returned: Card[] = [];
-  base = {
-    ...base,
-    seats: base.seats.map((seat) => {
-      const explicitHand = options.hands?.[seat.seat];
-      if (!explicitHand || explicitHand.length >= rules.startingHandSize) return seat;
-      const keep = new Set(explicitHand.map((c) => c.id));
+  state = {
+    ...state,
+    seats: state.seats.map((seat) => {
+      const own = explicitHands[seat.seat];
+      if (!own || own.length >= rules.startingHandSize) return seat;
+      const keep = new Set(own.map((c) => c.id));
       returned.push(...seat.hand.filter((c) => !keep.has(c.id)));
       return { ...seat, hand: seat.hand.filter((c) => keep.has(c.id)) };
     }),
   };
-  base = { ...base, drawPile: [...base.drawPile, ...returned] };
+
+  const forced = options.drawPile ?? [];
+  const rest = [...state.drawPile.filter((c) => !forced.some((d) => d.id === c.id)), ...returned];
 
   return {
-    ...base,
-    currentSeat: options.currentSeat ?? base.currentSeat,
-    phase: options.phase ?? base.phase,
-    activeColor: options.activeColor ?? base.activeColor,
-    drawPile: options.drawPile ? [...options.drawPile, ...base.drawPile.filter((c) => !options.drawPile!.some((d) => d.id === c.id))] : base.drawPile,
+    ...state,
+    currentSeat: options.currentSeat ?? state.currentSeat,
+    phase: options.phase ?? state.phase,
+    activeColor: options.activeColor ?? state.activeColor,
+    drawPile: [...forced, ...rest],
     pendingStartColorSeat: null,
   };
 }

@@ -60,11 +60,11 @@ ve mobil masa bunlardan bağımsız tamamlanabilir.
 | 2 Model | TAMAM |
 | 3 Motor | TAMAM |
 | 4 Clash 4 | TAMAM |
-| 5 Clash çağrısı | BAŞLADI |
-| 6 El/maç | — |
+| 5 Clash çağrısı | TAMAM |
+| 6 El/maç | TAMAM |
 | 7 Server | ENGELLİ (backend yok) |
 | 8 Kalıcılık | ENGELLİ (backend yok) |
-| 9 Mobil masa | — |
+| 9 Mobil masa | SIRADA |
 | 10 Video | ENGELLİ (LiveKit yok) |
 | 11 Dört hesap kabulü | ENGELLİ |
 
@@ -95,6 +95,22 @@ doğruluyor.
 
 Komutlar: `npx tsc --noEmit` (temiz), `npx vitest run src/engine/colorClash`
 (47/47 geçti).
+
+**Faz 5 — `clashCall.test.ts` (9 test geçti):**
+C048, C049, C050, C051, C052, C053, C054, C055.
+
+**Faz 6 — `score.test.ts` (11 test geçti):**
+C056, C057, C058, C059, C060, C061, C062, C063, C064.
+
+Komutlar: `npx tsc --noEmit` (temiz), `npx vitest run src/engine/colorClash`
+(67/67 geçti), `npx vitest run` (423/423 geçti).
+
+### Faz 6'da fixture'da düzeltilen hata
+
+`gameWith` her kısa eli aynı havuzun başından dolduruyordu; üç kısa el aynı
+kartları alınca deste 126 karta çıktı ve `assertValidDeck` C059'u kırmızıya
+düşürdü. Fixture tek paylaşılan "kullanıldı" kümesine çevrildi. Motor ve
+beklenen kural sonuçları değişmedi.
 
 ### Faz 3'te korunum kontrolünün yakaladığı hata
 
