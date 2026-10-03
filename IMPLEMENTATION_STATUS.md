@@ -35,7 +35,7 @@ Faz 6 (sunucu), 7 (kalıcılık) ve 9 (video) için repoda altyapı yok: backend
 | 2 Saf model | TAMAM |
 | 3 Validator | TAMAM |
 | 4 Tur motoru | TAMAM |
-| 5 Puan | BAŞLADI |
+| 5 Puan | TAMAM |
 | 6 Server | ENGELLİ (backend yok) |
 | 7 Kalıcılık | ENGELLİ (backend yok) |
 | 8 Mobil masa | — |
@@ -65,6 +65,16 @@ Faz 4'e girmeyenler: T083 (soldan alıp işleme — Faz 5'teki açılmış masa
 fixture'ıyla birlikte), T104 (per bölme desteklenmiyor; motorda böyle bir adım
 hiç yok, ayrı testi anlamsız), T108/T109 (sahte okeyle joker değişimi ve sabit
 assignment — Faz 5 fixture'ları ile), T114–T145 arası skor senaryoları Faz 5.
+
+**Faz 5 — `score.test.ts`, `penalty.test.ts` (30 test geçti):**
+T114, T115, T117, T120–T142 aralığındaki skor ve ceza senaryoları;
+T121, T122 stok bitişi tur motorunda doğrulandı.
+
+Henüz bağlanmayanlar: T116 (son sahte okey atışı NORMAL sayılır — motor bunu
+`isRealJoker` üzerinden zaten ayırıyor, ayrı testi Faz 8 masa fixture'ıyla),
+T118/T119 (CLEAN'in reddi — tur motorunda uygulandı, testi Faz 8'de tam el
+akışıyla), T143 (dört oyuncu çift açar, el devam eder), T144 (beş el sonunda
+beraberlik — maç katmanı henüz yok).
 
 ### Faz 2'de testlerin yakaladığı gerçek hata
 

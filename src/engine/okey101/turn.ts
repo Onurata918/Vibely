@@ -300,6 +300,15 @@ function commitTurn(state: FullState, seat: Seat, action: Extract<Action, { type
     };
   }
 
+  // R09: son stok tasi cekildikten sonra o oyuncunun turu tamamlanir; bitmezse
+  // el kazanansiz kapanir (T121, T122). Stok atilanlardan yeniden karistirilmaz.
+  if (draft.stock.length === 0) {
+    return {
+      ok: true,
+      state: { ...draft, version: state.version + 1, status: 'ROUND_ENDED', winnerSeat: null, finishKind: 'STOCK_EXHAUSTED', drawnTileId: null, pickedDiscardId: null },
+    };
+  }
+
   return { ok: true, state: beginTurn({ ...draft, version: state.version + 1 }, nextSeat(seat)) };
 }
 
