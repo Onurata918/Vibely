@@ -33,8 +33,8 @@ Faz 6 (sunucu), 7 (kalıcılık) ve 9 (video) için repoda altyapı yok: backend
 |---|---|
 | 1 Repo keşfi | TAMAM |
 | 2 Saf model | TAMAM |
-| 3 Validator | BAŞLADI |
-| 4 Tur motoru | — |
+| 3 Validator | TAMAM |
+| 4 Tur motoru | BAŞLADI |
 | 5 Puan | — |
 | 6 Server | ENGELLİ (backend yok) |
 | 7 Kalıcılık | ENGELLİ (backend yok) |
@@ -51,12 +51,25 @@ T001, T002, T003, T004, T005, T006, T007, T008, T009, T010, T011, T012.
 T013 (üretim shuffle'ı istemciye sızmaz) Faz 6'ya aittir: projeksiyon katmanı
 olmadan anlamlı doğrulanamaz, bu yüzden geçti işaretlenmedi.
 
+**Faz 3 — `meld.test.ts`, `opening.test.ts`, `meldFixtures.test.ts` (78 test geçti):**
+T014–T051 (per ve joker doğrulama), T052–T072 (açılış, mod kilidi, katlamalı eşik),
+`fixtures/melds.json` M001–M015 doğrudan çalıştırılıyor.
+
+T073 (açmış oyuncunun yeni peri için 101 aranmaması) Faz 4'e aittir: `ADD_MELDS`
+adımı olmadan doğrulanamaz.
+
 ### Faz 2'de testlerin yakaladığı gerçek hata
 
 İlk `numberTileId` uygulaması rengin ilk harfini kullanıyordu; BLUE ve BLACK
 aynı `B` kodunu üretince deste 106 yerine 80 benzersiz tileId'ye düşüyordu
 (T001 kırmızı). Renk kodları OKEY101_TESTS.md'deki R/B/K/Y tablosuna
 sabitlendi. Test zayıflatılmadı.
+
+### Faz 3'te düzeltilen test hatası
+
+T055 fixture'ında üç altılı perin değerini 21 yazmıştım; gerçek değeri 18.
+Beklenti değil **fixture** düzeltildi: senaryonun istediği 90 toplamını gerçekten
+veren per (R7 B7 K7 = 21) kullanıldı. Kural veya beklenen sonuç değiştirilmedi.
 
 ## Çözülmemiş referans kontrolleri
 
