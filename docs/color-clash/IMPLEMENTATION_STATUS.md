@@ -58,8 +58,8 @@ ve mobil masa bunlardan bağımsız tamamlanabilir.
 |---|---|
 | 1 Repo keşfi | TAMAM |
 | 2 Model | TAMAM |
-| 3 Motor | BAŞLADI |
-| 4 Clash 4 | — |
+| 3 Motor | TAMAM |
+| 4 Clash 4 | BAŞLADI |
 | 5 Clash çağrısı | — |
 | 6 El/maç | — |
 | 7 Server | ENGELLİ (backend yok) |
@@ -75,6 +75,20 @@ C001, C002, C003, C004, C005, C006, C007, C008, C009, C010, C011.
 
 Komutlar: `npx tsc --noEmit` (temiz), `npx vitest run src/engine/colorClash`
 (13/13 geçti).
+
+**Faz 3 — `engine.test.ts` (21 test geçti):**
+C012–C033 aralığındaki eşleşme, çekme ve özel kart senaryoları
+(C012, C013, C014, C015, C016, C017, C018, C019, C020, C021, C022, C023,
+C024, C025, C026, C027, C028, C029, C030, C031, C032, C033).
+
+Komutlar: `npx tsc --noEmit` (temiz), `npx vitest run src/engine/colorClash`
+(34/34 geçti).
+
+### Faz 3'te korunum kontrolünün yakaladığı hata
+
+Test fixture'ı, çekme destesine zorladığı kartı aynı zamanda dolgu ellerine de
+dağıtıyordu; `assertConservation` 109 kart sayıp C020'yi kırmızıya düşürdü.
+Fixture düzeltildi, motor ve beklenen kural sonucu değişmedi.
 
 ### Faz 2'de verilen uygulama kararı
 
