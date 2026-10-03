@@ -34,8 +34,8 @@ Faz 6 (sunucu), 7 (kalıcılık) ve 9 (video) için repoda altyapı yok: backend
 | 1 Repo keşfi | TAMAM |
 | 2 Saf model | TAMAM |
 | 3 Validator | TAMAM |
-| 4 Tur motoru | BAŞLADI |
-| 5 Puan | — |
+| 4 Tur motoru | TAMAM |
+| 5 Puan | BAŞLADI |
 | 6 Server | ENGELLİ (backend yok) |
 | 7 Kalıcılık | ENGELLİ (backend yok) |
 | 8 Mobil masa | — |
@@ -58,6 +58,14 @@ T014–T051 (per ve joker doğrulama), T052–T072 (açılış, mod kilidi, katl
 T073 (açmış oyuncunun yeni peri için 101 aranmaması) Faz 4'e aittir: `ADD_MELDS`
 adımı olmadan doğrulanamaz.
 
+**Faz 4 — `turn.test.ts` (30 test geçti):**
+T074–T082, T084–T098, T099–T103, T105–T107, T110–T113, T145.
+
+Faz 4'e girmeyenler: T083 (soldan alıp işleme — Faz 5'teki açılmış masa
+fixture'ıyla birlikte), T104 (per bölme desteklenmiyor; motorda böyle bir adım
+hiç yok, ayrı testi anlamsız), T108/T109 (sahte okeyle joker değişimi ve sabit
+assignment — Faz 5 fixture'ları ile), T114–T145 arası skor senaryoları Faz 5.
+
 ### Faz 2'de testlerin yakaladığı gerçek hata
 
 İlk `numberTileId` uygulaması rengin ilk harfini kullanıyordu; BLUE ve BLACK
@@ -70,6 +78,17 @@ sabitlendi. Test zayıflatılmadı.
 T055 fixture'ında üç altılı perin değerini 21 yazmıştım; gerçek değeri 18.
 Beklenti değil **fixture** düzeltildi: senaryonun istediği 90 toplamını gerçekten
 veren per (R7 B7 K7 = 21) kullanıldı. Kural veya beklenen sonuç değiştirilmedi.
+
+### Faz 4'te testlerin yakaladığı gerçek hata
+
+El tamamen boşaldığında `COMMIT_TURN`, R09'un istediği `MUST_LEAVE_DISCARD`
+yerine `TILE_NOT_OWNED` döndürüyordu (T113 kırmızı). Atış öncesi el boşluğu
+ayrı bir kontrole alındı.
+
+Ayrıca iki test fixture'ı kendi aritmetik hatamdan ötürü düzeltildi: açılış
+olarak kurduğum perler 101 değil 95 ediyordu, ve stok fixture'ı destenin geri
+kalanını düşürüp 106 korunumunu bozuyordu. Beklenen kural sonuçları
+değiştirilmedi.
 
 ## Çözülmemiş referans kontrolleri
 
